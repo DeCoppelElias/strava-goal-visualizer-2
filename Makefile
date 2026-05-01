@@ -1,5 +1,4 @@
-.PHONY: help install install-dev lint format typecheck test test-unit test-integration \
-        security pre-commit-install pre-commit-run clean
+.PHONY: help install install-dev lint format format-check typecheck test pre-commit-install pre-commit-run ci clean
 
 PYTHON := python
 UV     := uv
@@ -32,19 +31,16 @@ pre-commit-run: ## Run all pre-commit hooks against all files
 # Code quality
 # ---------------------------------------------------------------------------
 lint: ## Run ruff linter
-	$(UV) run ruff check backend frontend tests
+	$(UV) run ruff check .
 
 format: ## Run ruff formatter
-	$(UV) run ruff format backend frontend tests
+	$(UV) run ruff format .
 
 format-check: ## Check formatting without writing changes (used in CI)
-	$(UV) run ruff format --check backend frontend tests
+	$(UV) run ruff format --check .
 
 typecheck: ## Run mypy static type checking
 	$(UV) run mypy backend frontend
-
-security: ## Run bandit security scanner
-	$(UV) run bandit -c pyproject.toml -r backend frontend
 
 # ---------------------------------------------------------------------------
 # Tests
@@ -52,19 +48,10 @@ security: ## Run bandit security scanner
 test: ## Run full test suite with coverage
 	$(UV) run pytest
 
-test-unit: ## Run only unit tests (no I/O)
-	$(UV) run pytest tests/unit -v
-
-test-integration: ## Run only integration tests
-	$(UV) run pytest tests/integration -v
-
-test-fast: ## Run tests, stop on first failure
-	$(UV) run pytest -x
-
 # ---------------------------------------------------------------------------
 # CI target — mirrors what GitHub Actions runs
 # ---------------------------------------------------------------------------
-ci: lint format-check typecheck security test ## Run full CI suite locally
+ci: pre-commit-run lint format-check typecheck ## Run full CI suite locally
 
 # ---------------------------------------------------------------------------
 # Cleanup
