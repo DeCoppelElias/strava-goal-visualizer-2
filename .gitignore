@@ -398,6 +398,38 @@ MSBuild_Logs/
 # BeatPulse healthcheck temp database
 healthchecksdb
 
+# ---------------------------------------------------------------------------
+# Python / uv / project-specific additions
+# ---------------------------------------------------------------------------
+.venv/
+.uv/
+*.egg-info/
+dist/
+*.pyo
+
+# Testing & coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Type checking
+.mypy_cache/
+
+# Linting
+.ruff_cache/
+
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Fly.io (contains deployment secrets)
+fly.toml
+
 # Backup folder for Package Reference Convert tool in Visual Studio 2017
 MigrationBackup/
 
