@@ -13,8 +13,10 @@ cd strava-goal-visualizer-2
 cp .env.example .env
 # Edit .env with your values
 
-# 3. Install dependencies and the project itself (enables 'backend.*' / 'frontend.*' imports)
-.venv\Scripts\pip.exe install -e .
+# 3. Install dependencies and the project (enables 'backend.*' / 'frontend.*' imports)
+uv sync --group backend --group frontend
+# If uv is not available, use pip as a fallback:
+# .venv\Scripts\python.exe -m pip install -e .
 
 # 4. Start the backend (PowerShell)
 .venv\Scripts\uvicorn.exe backend.main:app --reload
