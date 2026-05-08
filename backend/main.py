@@ -42,6 +42,6 @@ async def health_db() -> dict[str, str]:
         async with engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
         return {"db": "ok"}
-    except SQLAlchemyError as exc:
+    except (SQLAlchemyError, OSError) as exc:
         logger.error("DB health check failed: %s", exc)
         return {"db": "error"}
