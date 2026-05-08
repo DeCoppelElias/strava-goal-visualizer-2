@@ -17,10 +17,10 @@ cp .env.example .env
 uv sync --group backend --group frontend
 
 # 4. Start the backend
-uv run uvicorn backend.main:app --reload
+$env:PYTHONPATH="." ; .venv\Scripts\uvicorn.exe backend.main:app --reload
 
 # 5. In a separate terminal, start the frontend
-uv run streamlit run frontend/app.py
+$env:PYTHONPATH="." ; .venv\Scripts\streamlit.exe run frontend/app.py
 ```
 
 Backend runs at http://localhost:8000. Frontend runs at http://localhost:8501.
