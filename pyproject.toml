@@ -9,7 +9,12 @@ description = "Strava-integrated running goal visualizer with Streamlit frontend
 requires-python = ">=3.12"
 
 [tool.uv]
-package = false
+
+# ---------------------------------------------------------------------------
+# Tell hatchling which directories to package (used by pip install -e .)
+# ---------------------------------------------------------------------------
+[tool.hatch.build.targets.wheel]
+packages = ["backend", "frontend"]
 
 # ---------------------------------------------------------------------------
 # Dependency groups (uv workspaces / uv pip install --group)

@@ -13,14 +13,14 @@ cd strava-goal-visualizer-2
 cp .env.example .env
 # Edit .env with your values
 
-# 3. Install dependencies
-uv sync --group backend --group frontend
+# 3. Install dependencies and the project itself (enables 'backend.*' / 'frontend.*' imports)
+.venv\Scripts\pip.exe install -e .
 
 # 4. Start the backend (PowerShell)
-$env:PYTHONPATH="." ; .venv\Scripts\uvicorn.exe backend.main:app --reload
+.venv\Scripts\uvicorn.exe backend.main:app --reload
 
 # 5. In a separate terminal, start the frontend (PowerShell)
-$env:PYTHONPATH="." ; .venv\Scripts\streamlit.exe run frontend/app.py
+.venv\Scripts\streamlit.exe run frontend/app.py
 ```
 
 Backend runs at http://localhost:8000. Frontend runs at http://localhost:8501.
