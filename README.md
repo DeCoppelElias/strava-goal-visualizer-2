@@ -26,3 +26,23 @@ uv sync --group backend --group frontend
 ```
 
 Backend runs at http://localhost:8000. Frontend runs at http://localhost:8501.
+
+## Docker Compose (recommended for local development)
+
+**Prerequisites:** Docker with Compose plugin.
+
+```bash
+# 1. Copy and fill in environment variables
+cp .env.example .env
+# Edit .env with your Strava credentials and secrets
+
+# 2. Start all services (db, backend, frontend)
+docker compose up --build
+
+# 3. Verify
+curl http://localhost:8000/health      # → {"status":"ok"}
+curl http://localhost:8000/health/db   # → {"db":"ok"}
+# Streamlit: http://localhost:8501
+```
+
+All services have health checks. The backend waits for PostgreSQL to be healthy before starting, and the frontend waits for the backend.
