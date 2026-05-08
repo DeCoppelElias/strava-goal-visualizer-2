@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 _REQUIRED_ENV_VARS: list[str] = [
     "FRONTEND_ORIGIN",
-    # TASK-1.4: "DATABASE_URL"
+    "DATABASE_URL",
     # EPIC-2:   "SESSION_SECRET_KEY", "TOKEN_ENCRYPTION_KEY"
     # EPIC-2:   "STRAVA_CLIENT_ID", "STRAVA_CLIENT_SECRET", "STRAVA_REDIRECT_URI"
 ]
@@ -29,8 +29,10 @@ if _missing:
 @dataclass(frozen=True)
 class Settings:
     frontend_origin: str
+    database_url: str
 
 
 settings = Settings(
     frontend_origin=os.environ["FRONTEND_ORIGIN"],
+    database_url=os.environ["DATABASE_URL"],
 )
