@@ -159,7 +159,7 @@ _Generated: May 2, 2026_
 
 ---
 
-#### TASK-1.1
+#### TASK-1.1 ✅
 
 **Name:** Initialize project structure and dependency management
 
@@ -184,7 +184,7 @@ _Generated: May 2, 2026_
 
 ---
 
-#### TASK-1.2
+#### TASK-1.2 ✅
 
 **Name:** Bootstrap FastAPI app with health endpoint
 
@@ -208,7 +208,7 @@ _Generated: May 2, 2026_
 
 ---
 
-#### TASK-1.3 _(ad-hoc)_
+#### TASK-1.3 ✅ _(ad-hoc)_
 
 **Name:** Extract backend config module
 

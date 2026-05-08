@@ -45,6 +45,7 @@ If something clearly broken is discovered outside the task scope: flag it and as
 - Backlog-first: prefer tasks defined in `docs/epics/backlog.md`.
 - Ad-hoc tasks are allowed if explicitly requested and clearly reasoned.
 - After any ad-hoc task, update `docs/epics/backlog.md` to reflect what was implemented so everything stays accounted for.
+- When a task is completed, mark it as `✅` in the task heading in `docs/epics/backlog.md`. Example: `#### TASK-1.1 ✅`
 
 ### Commits
 - One task = one commit.
