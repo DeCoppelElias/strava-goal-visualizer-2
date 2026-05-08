@@ -208,7 +208,29 @@ _Generated: May 2, 2026_
 
 ---
 
-#### TASK-1.3
+#### TASK-1.3 _(ad-hoc)_
+
+**Name:** Extract backend config module
+
+**Goal:** All environment variable loading is centralised in `backend/config.py` and imported by the rest of the backend. `backend/main.py` contains no env-loading logic.
+
+**Context:** Added ad-hoc after TASK-1.2 because inline env loading in `main.py` does not scale as more modules need access to config values. Establishing the pattern now avoids a larger refactor later.
+
+**Input:** `backend/main.py` from TASK-1.2.
+
+**Output:**
+- `backend/config.py` — loads `.env` via `python-dotenv`, defines a `Settings` dataclass with all currently required vars, fails fast on missing values with a clear error, exposes a module-level `settings` singleton. Comment marks where future required vars should be added.
+- `backend/main.py` — imports `settings` from `backend.config`; all inline env logic removed.
+
+**Dependencies:** TASK-1.2
+
+**Complexity:** Small
+
+**Testability:** `backend/main.py` imports without error when all vars are set. Missing a required var prints a clear error and exits 1.
+
+---
+
+#### TASK-1.4
 
 **Name:** Bootstrap Streamlit app with health-check call
 
@@ -232,7 +254,7 @@ _Generated: May 2, 2026_
 
 ---
 
-#### TASK-1.4
+#### TASK-1.5
 
 **Name:** Set up PostgreSQL connection and verify from backend
 
@@ -255,7 +277,7 @@ _Generated: May 2, 2026_
 
 ---
 
-#### TASK-1.5
+#### TASK-1.6
 
 **Name:** Docker Compose for local development
 
@@ -271,7 +293,7 @@ _Generated: May 2, 2026_
 - Health checks on all services
 - Volume for PostgreSQL data persistence
 
-**Dependencies:** TASK-1.3, TASK-1.4
+**Dependencies:** TASK-1.4, TASK-1.5
 
 **Complexity:** Small
 
@@ -279,27 +301,7 @@ _Generated: May 2, 2026_
 
 ---
 
-#### TASK-1.6 _(ad-hoc)_
-
-**Name:** Extract backend config module
-
-**Goal:** All environment variable loading is centralised in `backend/config.py` and imported by the rest of the backend. `backend/main.py` contains no env-loading logic.
-
-**Context:** Added ad-hoc after TASK-1.2 because inline env loading in `main.py` does not scale as more modules need access to config values. Establishing the pattern now avoids a larger refactor later.
-
-**Input:** `backend/main.py` from TASK-1.2.
-
-**Output:**
-- `backend/config.py` — loads `.env` via `python-dotenv`, defines a `Settings` dataclass with all currently required vars, fails fast on missing values with a clear error, exposes a module-level `settings` singleton. Comment marks where future required vars should be added.
-- `backend/main.py` — imports `settings` from `backend.config`; all inline env logic removed.
-
-**Dependencies:** TASK-1.2
-
-**Complexity:** Small
-
-**Testability:** `backend/main.py` imports without error when all vars are set. Missing a required var prints a clear error and exits 1.
-
----
+### EPIC-2 — OAuth Authentication
 
 ---
 
