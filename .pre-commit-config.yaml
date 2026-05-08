@@ -34,3 +34,9 @@ repos:
       - id: mypy
         args: ["--config-file", "pyproject.toml"]
         exclude: ^(alembic/|tests/)
+        additional_dependencies:
+          - "fastapi>=0.115"
+          - "sqlalchemy[asyncio]>=2.0"
+          - "httpx>=0.27"
+          - "cryptography>=42.0"
+          - "python-dotenv>=1.0"
