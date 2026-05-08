@@ -16,10 +16,10 @@ cp .env.example .env
 # 3. Install dependencies
 uv sync --group backend --group frontend
 
-# 4. Start the backend
+# 4. Start the backend (PowerShell)
 $env:PYTHONPATH="." ; .venv\Scripts\uvicorn.exe backend.main:app --reload
 
-# 5. In a separate terminal, start the frontend
+# 5. In a separate terminal, start the frontend (PowerShell)
 $env:PYTHONPATH="." ; .venv\Scripts\streamlit.exe run frontend/app.py
 ```
 
