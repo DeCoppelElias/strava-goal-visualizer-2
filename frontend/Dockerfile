@@ -19,4 +19,4 @@ COPY backend/ backend/
 COPY frontend/ frontend/
 RUN uv sync --group frontend --no-editable
 
-CMD ["streamlit", "run", "frontend/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["python", "-m", "streamlit", "run", "frontend/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
