@@ -6,13 +6,15 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies first (cached layer unless pyproject.toml changes)
+# Copy dependency manifest and install all deps declared in pyproject.toml.
+# Done before copying source so this layer is cached unless pyproject.toml changes.
 COPY pyproject.toml ./
-RUN pip install --no-cache-dir streamlit httpx python-dotenv
+RUN pip install --no-cache-dir .
 
-# Copy source and install the project (registers backend.* and frontend.* packages)
+# Copy source code and reinstall the project package (--no-deps skips re-downloading deps).
+# Separate step so code changes don't bust the dependency cache layer above.
 COPY backend/ backend/
 COPY frontend/ frontend/
-RUN pip install --no-cache-dir --no-deps -e .
+RUN pip install --no-cache-dir --no-deps .
 
 CMD ["python", "-m", "streamlit", "run", "frontend/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
