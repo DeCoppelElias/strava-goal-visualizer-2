@@ -1,5 +1,10 @@
+import asyncio
 import logging
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
+from alembic import command as alembic_command
+from alembic.config import Config as AlembicConfig
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
@@ -17,10 +22,27 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+# ---------------------------------------------------------------------------
+# Lifespan — run DB migrations on startup
+# ---------------------------------------------------------------------------
+def _run_migrations() -> None:
+    alembic_cfg = AlembicConfig("alembic.ini")
+    alembic_command.upgrade(alembic_cfg, "head")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    logger.info("Running database migrations...")
+    await asyncio.to_thread(_run_migrations)
+    logger.info("Database migrations complete.")
+    yield
+
+
 # ---------------------------------------------------------------------------
 # App
 # ---------------------------------------------------------------------------
-app = FastAPI(title="Strava Goal Visualizer API")
+app = FastAPI(title="Strava Goal Visualizer API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

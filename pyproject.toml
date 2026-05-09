@@ -18,6 +18,7 @@ dependencies = [
     "httpx>=0.27",
     "cryptography>=42.0",
     "python-dotenv>=1.0",
+    "alembic>=1.13",
     "streamlit>=1.36",
 ]
 
@@ -41,9 +42,12 @@ backend = [
     "httpx>=0.27",
     "cryptography>=42.0",
     "python-dotenv>=1.0",
+    "alembic>=1.13",
 ]
 frontend = [
     "streamlit>=1.36",
+    "httpx>=0.27",
+    "python-dotenv>=1.0",
 ]
 dev = [
     "pytest>=8.2",
@@ -97,7 +101,11 @@ python_version = "3.12"
 strict = true
 pretty = true
 show_error_codes = true
-exclude = ["alembic/", "tests/"]
+exclude = ["backend/migrations/", "tests/"]
+
+[[tool.mypy.overrides]]
+module = ["alembic.*"]
+ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["streamlit.*"]

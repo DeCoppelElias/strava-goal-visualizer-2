@@ -3,6 +3,12 @@
         "d:\\VisualStudioProjects\\strava-goal-visualizer-2\\.venv\\Scripts\\python.exe": true,
         ".venv\\Scripts\\python.exe": true,
         "git add": true,
-        "git commit": true
+        "git commit": true,
+        "uv": true,
+        ".venv\\Scripts\\pip": true,
+        "/^python -m pip install alembic$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
     }
 }
