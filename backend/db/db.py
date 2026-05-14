@@ -1,8 +1,7 @@
 import logging
 
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
-
 from backend.config import settings
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 logger = logging.getLogger(__name__)
 
