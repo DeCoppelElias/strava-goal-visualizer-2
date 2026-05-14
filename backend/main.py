@@ -11,7 +11,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from backend.config import settings
-from backend.db import engine
+from backend.db.db import engine
 
 # ---------------------------------------------------------------------------
 # Logging
