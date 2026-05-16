@@ -1,8 +1,8 @@
 import asyncio
 
 from alembic import context
-from backend.config import settings
 from backend.db.models import Base
+from backend.helpers.config import settings
 from sqlalchemy import Connection, pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 

@@ -2,10 +2,9 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, Mock
 
 import pytest
-from backend.oauth_state import (
+from backend.services.state_token_service import (
     TOKEN_TTL_MINUTES,
-    create_state_token,
-    validate_and_consume_state_token,
+    StateTokenService,
 )
 
 
@@ -16,7 +15,8 @@ async def test_create_state_token_stores_token_and_expiration():
     before_creation = datetime.now(UTC)
 
     # Act
-    token = await create_state_token(db)
+    state_token_service = StateTokenService()
+    token = await state_token_service.create_state_token(db)
 
     # Assert
     after_creation = datetime.now(UTC)
@@ -31,7 +31,7 @@ async def test_create_state_token_stores_token_and_expiration():
     query, params = db.execute.call_args.args
 
     assert "INSERT INTO oauth_state_tokens" in str(query)
-    assert params["state_token"] == token
+    assert params["token"] == token
 
     expires_at = params["expires_at"]
 
@@ -54,7 +54,8 @@ async def test_validate_valid_token_returns_true_and_deletes_token():
     db.execute.return_value = result_mock
 
     # Act
-    result = await validate_and_consume_state_token(
+    state_token_service = StateTokenService()
+    result = await state_token_service.validate_and_consume_state_token(
         db,
         "valid-token",
     )
@@ -76,7 +77,8 @@ async def test_validate_unknown_token_returns_false():
     db.execute.return_value = result_mock
 
     # Act
-    result = await validate_and_consume_state_token(
+    state_token_service = StateTokenService()
+    result = await state_token_service.validate_and_consume_state_token(
         db,
         "unknown-token",
     )
@@ -100,7 +102,8 @@ async def test_validate_expired_token_returns_false_and_deletes_token():
     db.execute.return_value = result_mock
 
     # Act
-    result = await validate_and_consume_state_token(
+    state_token_service = StateTokenService()
+    result = await state_token_service.validate_and_consume_state_token(
         db,
         "expired-token",
     )
@@ -131,8 +134,9 @@ async def test_consumed_token_cannot_be_reused():
     ]
 
     # Act
-    first_call = await validate_and_consume_state_token(db, "token")
-    second_call = await validate_and_consume_state_token(db, "token")
+    state_token_service = StateTokenService()
+    first_call = await state_token_service.validate_and_consume_state_token(db, "token")
+    second_call = await state_token_service.validate_and_consume_state_token(db, "token")
 
     # Assert
     assert first_call is True

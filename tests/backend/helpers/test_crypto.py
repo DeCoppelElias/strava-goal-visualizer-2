@@ -1,5 +1,5 @@
 import pytest
-from backend.crypto import Crypto
+from backend.helpers.crypto import Crypto
 from cryptography.fernet import Fernet
 
 
