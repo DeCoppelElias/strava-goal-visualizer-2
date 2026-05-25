@@ -499,7 +499,7 @@ _Generated: May 2, 2026_
 
 ---
 
-#### TASK-2.5
+#### TASK-2.5 ✅
 
 **Name:** Implement `GET /oauth/callback` endpoint
 
