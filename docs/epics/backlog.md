@@ -438,7 +438,7 @@ _Generated: May 2, 2026_
 **Input:** `TOKEN_ENCRYPTION_KEY` env var (Fernet key or AES-256 key).
 
 **Output:**
-- `backend/crypto.py` with `encrypt(plaintext: str) -> str` and `decrypt(ciphertext: str) -> str`
+- `backend/shared/crypto.py` — `Crypto` class with `encrypt(plaintext: str) -> str` and `decrypt(ciphertext: str) -> str`; instantiated as a singleton in `backend/dependencies.py`
 - Uses `cryptography` library (Fernet symmetric encryption)
 - Raises a clear error on startup if `TOKEN_ENCRYPTION_KEY` is missing or invalid
 - Tokens are never logged in this module
@@ -462,7 +462,7 @@ _Generated: May 2, 2026_
 **Input:** `oauth_state_tokens` table from TASK-2.1.
 
 **Output:**
-- `backend/oauth_state.py` with:
+- `backend/auth/state_token_service.py` — `StateTokenService` class with:
   - `create_state_token(db) -> str`: inserts a new token with `expires_at = now() + 10min`, returns the token string
   - `validate_and_consume_state_token(db, token: str) -> bool`: checks existence and TTL, deletes the token on success, returns `False` on mismatch or expiry
 - Token is a cryptographically random URL-safe string (32+ bytes)
@@ -510,12 +510,15 @@ _Generated: May 2, 2026_
 **Input:** `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET` env vars. State token module. Encryption utility. Users + credentials tables.
 
 **Output:**
-- Validates `state` parameter using `validate_and_consume_state_token`
+- `backend/shared/config.py` — add `strava_client_secret: str` and `session_secret_key: str` to `Settings`; uncomment from `_REQUIRED_ENV_VARS`
+- `backend/main.py` — add `SessionMiddleware` with `session_secret_key`, `https_only=True`, `same_site="lax"`
+- `backend/auth/router.py` — `GET /oauth/callback` route (no JSON response schema; returns `RedirectResponse`)
+- Validates `state` parameter using `validate_and_consume_state_token`; logs state mismatch as potential CSRF
 - Exchanges `code` with Strava token endpoint
 - Checks that both `activity:read_all` and `profile:read_all` scopes are present in the token response; rejects with re-consent redirect if either is missing
 - Upserts user record by `strava_athlete_id`
 - Stores encrypted tokens in `oauth_credentials`
-- Issues a secure session cookie (`HttpOnly`, `Secure`, `SameSite=Lax`) containing the user ID
+- Issues a session via `request.session["user_id"] = user.id` (Starlette `SessionMiddleware` signs the cookie automatically)
 - Session cookie is rotated (new value) on every successful login
 - Redirects to Streamlit frontend on success
 - Failure modes: state mismatch (log as potential CSRF), state expired, Strava error response, token exchange failure — each returns a clear error redirect
@@ -539,8 +542,9 @@ _Generated: May 2, 2026_
 **Input:** Session cookie issued in TASK-2.5. Users table.
 
 **Output:**
-- FastAPI dependency `get_current_user(request) -> User` that reads session cookie, looks up user, raises `401` if missing/invalid
-- `GET /session/me` returns `{"strava_athlete_id": ..., "created_at": ...}` for the authenticated user
+- `backend/dependencies.py` — `get_current_user(request, db) -> User` reads `request.session["user_id"]`, looks up user, raises `401` if missing/invalid
+- `backend/auth/schemas.py` — `SessionMeResponse(BaseModel)` with `strava_athlete_id: int`, `created_at: datetime`
+- `backend/auth/router.py` — `GET /session/me` returns `SessionMeResponse`; requires `get_current_user`
 - No PII beyond athlete ID and timestamps returned
 
 **Dependencies:** TASK-2.5
@@ -562,8 +566,9 @@ _Generated: May 2, 2026_
 **Input:** Session middleware from TASK-2.6. OAuth credentials table.
 
 **Output:**
-- `POST /session/logout`: clears the session cookie, returns `200`
-- `POST /oauth/revoke`: calls Strava revoke endpoint with the user's access token, deletes the `oauth_credentials` row, clears the session cookie
+- `backend/auth/schemas.py` — `LogoutResponse(BaseModel)` with `ok: bool`; `RevokeResponse(BaseModel)` with `ok: bool`
+- `backend/auth/router.py` — `POST /session/logout` clears `request.session`, returns `LogoutResponse`
+- `backend/auth/router.py` — `POST /oauth/revoke` calls Strava revoke endpoint, deletes `oauth_credentials` row, clears `request.session`, returns `RevokeResponse`
 - Both require authentication via `get_current_user`
 - Tokens are never logged
 
@@ -615,10 +620,11 @@ _Generated: May 2, 2026_
 **Input:** SQLAlchemy setup from TASK-1.4. Users table from TASK-2.1.
 
 **Output:**
+- `backend/shared/models.py` — `Activity` and `SyncState` ORM models added
 - `activities` table: `id` (PK), `user_id` (FK → users), `strava_activity_id` (bigint, unique per user), `name` (text), `sport_type` (text), `distance_meters` (numeric), `moving_time_seconds` (int), `start_date` (timestamptz), `created_at`, `updated_at`
 - Unique constraint on `(user_id, strava_activity_id)`
 - `sync_state` table: `user_id` (PK, FK → users), `last_sync_completed_at` (timestamptz, nullable)
-- Alembic migration file
+- Alembic migration file in `backend/db/migrations/versions/`
 
 **Dependencies:** TASK-2.1
 
@@ -639,7 +645,7 @@ _Generated: May 2, 2026_
 **Input:** Strava access token (decrypted). `STRAVA_CLIENT_ID` env var.
 
 **Output:**
-- `backend/strava_client.py` with `fetch_activities(access_token: str, page: int = 1) -> list[dict]`
+- `backend/sync/strava_client.py` — `fetch_activities(access_token: str, page: int = 1) -> list[dict]`
 - Fetches `GET https://www.strava.com/api/v3/athlete/activities` with bearer token
 - Supports pagination via `page` and `per_page=200`
 - Returns raw activity dicts (no transformation)
@@ -665,7 +671,7 @@ _Generated: May 2, 2026_
 **Input:** Encryption utility from TASK-2.2. `oauth_credentials` table. Strava token refresh endpoint.
 
 **Output:**
-- `backend/token_refresh.py` with `ensure_fresh_token(db, user_id: int) -> str`:
+- `backend/auth/token_refresh.py` — `ensure_fresh_token(db, user_id: int) -> str`:
   - Returns decrypted access token if not expired
   - If expired, calls Strava refresh endpoint, updates `oauth_credentials` with new encrypted tokens, returns new access token
   - If refresh fails (401 from Strava), raises `TokenRefreshError` (caller is responsible for session invalidation)
@@ -690,7 +696,9 @@ _Generated: May 2, 2026_
 **Input:** Strava client from TASK-3.2. Token refresh from TASK-3.3. Activities + sync state tables from TASK-3.1. Auth middleware from TASK-2.6.
 
 **Output:**
-- `POST /sync`: validates ownership (own athlete ID only)
+- `backend/sync/schemas.py` — `SyncResponse(BaseModel)` with `synced_activities: int`, `last_sync_completed_at: datetime`
+- `backend/sync/router.py` — `POST /sync` route with `response_model=SyncResponse`; rate limited; requires `get_current_user`
+- Validates ownership (own athlete ID only)
 - Checks `last_sync_completed_at`; if within the last 10 minutes, returns `429 Too Many Requests` with `Retry-After: <seconds_until_eligible>` header
 - Fetches all pages of current-year activities from Strava
 - Upserts into `activities` table by `(user_id, strava_activity_id)` — all activity types stored as received
@@ -750,9 +758,10 @@ _Generated: May 2, 2026_
 **Input:** Users table from TASK-2.1.
 
 **Output:**
+- `backend/shared/models.py` — `Goal` ORM model added
 - `goals` table: `user_id` (PK, FK → users), `yearly_distance_km` (numeric, not null, default 365, check > 0 and <= 100000), `updated_at`
 - Row auto-created on user creation (default 365 km)
-- Alembic migration
+- Alembic migration in `backend/db/migrations/versions/`
 
 **Dependencies:** TASK-2.1
 
@@ -773,8 +782,8 @@ _Generated: May 2, 2026_
 **Input:** Goals table from TASK-5.1. Auth middleware from TASK-2.6.
 
 **Output:**
-- `GET /goals` returns `{"yearly_distance_km": <value>}` for the authenticated user
-- `PUT /goals` body: `{"yearly_distance_km": <value>}`, validates range (1–100,000), upserts, returns updated value
+- `backend/goals/schemas.py` — `GoalResponse(BaseModel)` with `yearly_distance_km: float`; `UpdateGoalRequest(BaseModel)` with `yearly_distance_km: float`
+- `backend/goals/router.py` — `GET /goals` returns `GoalResponse`; `PUT /goals` accepts `UpdateGoalRequest`, returns `GoalResponse`; both require `get_current_user`
 - Both return `403` if user attempts to set another user's goal (enforced by `get_current_user`)
 
 **Dependencies:** TASK-5.1, TASK-2.6
@@ -796,7 +805,9 @@ _Generated: May 2, 2026_
 **Input:** Activities table. Goals table. Auth middleware.
 
 **Output:**
-- New endpoint `GET /dashboard/personal` returning:
+- `backend/goals/schemas.py` — `PersonalDashboardResponse(BaseModel)` with `goal_km`, `distance_to_date_km`, `progress_pct`, `on_pace`, `expected_pct`, `last_sync_completed_at` fields
+- `backend/goals/router.py` — `GET /dashboard/personal` returns `PersonalDashboardResponse`; requires `get_current_user`
+- Response shape:
   ```json
   {
     "goal_km": 365,
@@ -863,9 +874,10 @@ _Generated: May 2, 2026_
 **Input:** Users table from TASK-2.1.
 
 **Output:**
+- `backend/shared/models.py` — `Club` and `ClubMembership` ORM models added
 - `clubs` table: `id` (PK, Strava club ID as bigint), `name` (text), `updated_at`
 - `club_memberships` table: `user_id` (FK → users), `club_id` (FK → clubs), `synced_at` (timestamptz); PK on `(user_id, club_id)`
-- Alembic migration
+- Alembic migration in `backend/db/migrations/versions/`
 
 **Dependencies:** TASK-2.1
 
@@ -886,7 +898,7 @@ _Generated: May 2, 2026_
 **Input:** Strava API client. Sync flow from TASK-3.4.
 
 **Output:**
-- `strava_client.py` extended with `fetch_athlete_clubs(access_token: str) -> list[dict]`
+- `backend/sync/strava_client.py` extended with `fetch_athlete_clubs(access_token: str) -> list[dict]`
 - During `POST /sync`: fetch clubs, upsert `clubs` rows, upsert `club_memberships` rows (no deletion of old memberships in v1 — stale memberships visible until next sync)
 - Membership rows include `synced_at = now()`
 
@@ -909,7 +921,8 @@ _Generated: May 2, 2026_
 **Input:** `club_memberships` and `clubs` tables. Auth middleware.
 
 **Output:**
-- `GET /clubs` returns `[{"id": ..., "name": "..."}]` for clubs the authenticated user is a member of
+- `backend/clubs/schemas.py` — `ClubResponse(BaseModel)` with `id: int`, `name: str`; endpoint returns `list[ClubResponse]`
+- `backend/clubs/router.py` — `GET /clubs` returns `list[ClubResponse]`; requires `get_current_user`
 - Returns `[]` if no clubs or no sync has occurred
 - Only own memberships returned
 
@@ -932,6 +945,8 @@ _Generated: May 2, 2026_
 **Input:** `clubs`, `club_memberships`, `activities`, `goals` tables. Auth middleware.
 
 **Output:**
+- `backend/clubs/schemas.py` — `MemberProgressResponse(BaseModel)` with `strava_athlete_id: int`, `distance_to_date_km: float`, `goal_km: float`, `progress_pct: float`; endpoint returns `list[MemberProgressResponse]`
+- `backend/clubs/router.py` — `GET /clubs/{club_id}/progress` returns `list[MemberProgressResponse]`; requires `get_current_user`
 - Validates that the authenticated user is a member of `club_id`; returns `403` otherwise
 - Returns list of members who are app-authorized AND members of that club:
   ```json
@@ -992,9 +1007,10 @@ _Generated: May 2, 2026_
 **Input:** Database setup.
 
 **Output:**
+- `backend/shared/models.py` — `DeletionEvent` ORM model added
 - `deletion_events` table: `id` (PK), `user_id` (bigint, not FK — preserved after user deletion), `reason` (text: `user_initiated` / `strava_deauth`), `deleted_at` (timestamptz)
 - No PII columns
-- Alembic migration
+- Alembic migration in `backend/db/migrations/versions/`
 
 **Dependencies:** TASK-1.4
 
@@ -1015,7 +1031,7 @@ _Generated: May 2, 2026_
 **Input:** All user-related tables. Deletion audit log from TASK-7.1.
 
 **Output:**
-- `backend/deletion_service.py` with `delete_user_data(db, user_id: int, reason: str)`:
+- `backend/privacy/deletion_service.py` — `delete_user_data(db, user_id: int, reason: str)`:
   - Deletes: `activities`, `club_memberships`, `oauth_credentials`, `sync_state`, `goals`
   - Deletes: `users` row
   - Inserts: `deletion_events` row with `user_id` (Strava athlete ID), `reason`, `deleted_at`
@@ -1041,15 +1057,9 @@ _Generated: May 2, 2026_
 **Input:** All user-related tables. Auth middleware.
 
 **Output:**
-- `POST /privacy/export` returns a JSON response containing:
-  - User record (athlete ID, created_at)
-  - Goal
-  - All activities (all fields except internal PKs)
-  - Club memberships
-  - Sync state
-- Response includes `Content-Disposition: attachment; filename="strava-export.json"`
+- `backend/privacy/router.py` — `POST /privacy/export` returns a `Response` with `Content-Disposition: attachment; filename="strava-export.json"` (file download, not a JSON schema response); rate limited; requires `get_current_user`
+- Export payload contains: user record (athlete ID, created_at), goal, all activities (all fields except internal PKs), club memberships, sync state
 - Tokens are NEVER included in the export
-- Per-IP rate limiting applied
 
 **Dependencies:** TASK-2.6, TASK-3.1, TASK-5.1, TASK-6.1
 
@@ -1070,10 +1080,8 @@ _Generated: May 2, 2026_
 **Input:** Deletion service from TASK-7.2. Auth middleware.
 
 **Output:**
-- `POST /privacy/delete` calls `delete_user_data(db, current_user.id, reason="user_initiated")`
-- Immediately invalidates the session (clears session cookie in response)
-- Returns `200 {"deleted": true}`
-- Per-IP rate limiting applied
+- `backend/privacy/schemas.py` — `DeleteResponse(BaseModel)` with `deleted: bool`
+- `backend/privacy/router.py` — `POST /privacy/delete` calls `delete_user_data`, clears `request.session`, returns `DeleteResponse(deleted=True)`; rate limited; requires `get_current_user`
 
 **Dependencies:** TASK-7.2, TASK-2.6
 
@@ -1094,7 +1102,7 @@ _Generated: May 2, 2026_
 **Input:** Deletion service from TASK-7.2. Strava deauth payload and signature scheme.
 
 **Output:**
-- `POST /strava/deauth` receives Strava's deauth payload
+- `backend/privacy/router.py` — `POST /strava/deauth` (no auth required — Strava server call; verified by signature instead)
 - Verifies the request using Strava's `client_secret`-based signature (or Strava-specified verification method)
 - Looks up user by `strava_athlete_id` from payload
 - Calls `delete_user_data(db, user_id, reason="strava_deauth")`
