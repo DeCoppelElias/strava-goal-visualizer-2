@@ -83,7 +83,7 @@ python_version = "3.12"
 strict = true
 pretty = true
 show_error_codes = true
-exclude = ["backend/migrations/", "tests/"]
+exclude = ["backend/db/migrations/", "tests/"]
 
 [[tool.mypy.overrides]]
 module = ["alembic.*"]
