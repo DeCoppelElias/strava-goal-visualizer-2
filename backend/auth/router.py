@@ -4,12 +4,14 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.auth.dependencies import get_current_user
 from backend.auth.exceptions import InsufficientScopeError, OAuthStateError, StravaAPIError
-from backend.auth.schemas import AuthorizeResponse
+from backend.auth.schemas import AuthorizeResponse, SessionMeResponse
 from backend.auth.strava_oauth_service import StravaOAuthService
 from backend.dependencies import get_strava_oauth_service
 from backend.shared.config import settings
 from backend.shared.db import get_db
+from backend.shared.models import User
 from backend.shared.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
@@ -60,3 +62,13 @@ async def oauth_callback(
     request.session.clear()
     request.session["user_id"] = user.id
     return RedirectResponse(url=frontend)
+
+
+@router.get("/session/me", response_model=SessionMeResponse)
+async def session_me(
+    current_user: User = Depends(get_current_user),  # noqa: B008
+) -> SessionMeResponse:
+    return SessionMeResponse(
+        strava_athlete_id=current_user.strava_athlete_id,
+        created_at=current_user.created_at,
+    )
