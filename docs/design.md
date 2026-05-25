@@ -48,6 +48,43 @@ A Strava-integrated application with a Streamlit frontend and FastAPI backend, w
 
 ---
 
+## 6. Architecture Patterns
+
+### 6.0 Backend Code Organisation
+
+The backend follows a **domain-driven structure**. Each business domain owns its routes, business logic, and schemas. Cross-cutting infrastructure lives in `shared/`.
+
+```
+backend/
+  auth/          # OAuth flow, sessions, users, credentials
+  sync/          # Activity fetch, upsert, cooldown
+  goals/         # Goal CRUD, progress computation
+  clubs/         # Club fetch, membership, progress view
+  privacy/       # Export, deletion, deauth webhook
+  shared/        # config, crypto, db, models, rate_limit
+  db/            # Alembic migrations only
+  dependencies.py
+  main.py        # Assembly: middleware, router inclusion, health endpoints
+```
+
+Each domain contains a `router.py` (FastAPI `APIRouter`), a `schemas.py` (Pydantic models), and one or more service files containing business logic.
+
+**`shared/` rule:** A module belongs in `shared/` only if it is imported by two or more domains. Single-domain utilities live inside that domain.
+
+### 6.0.1 Dependency Injection
+
+All service construction goes through factory functions in `backend/dependencies.py`. Singletons (e.g., the `Crypto` instance, the `Limiter`) are module-level constants — never recreated per request. Endpoints always use `Depends(factory_fn)`; they never instantiate services directly.
+
+### 6.0.2 Pydantic Schemas
+
+Every endpoint declares a named `response_model` using a Pydantic `BaseModel`. Request body parameters also use named schema classes. Schemas live in `<domain>/schemas.py`. Endpoints return the schema instance, not a raw dict. This ensures OpenAPI documentation is always accurate and responses are validated.
+
+### 6.0.3 Rate Limiting
+
+A single `Limiter` instance from `backend/shared/rate_limit.py` is registered on `app.state.limiter` and reused across all domain routers. Decorating an endpoint with `@limiter.limit("N/minute")` uses this shared instance and its shared storage backend.
+
+---
+
 ## 6. Architecture
 
 ### 6.1 Frontend (Streamlit)

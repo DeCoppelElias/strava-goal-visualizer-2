@@ -50,16 +50,76 @@ chore(deps): add httpx to pyproject.toml
 
 ---
 
-## Architecture Patterns
+## Domain Structure
 
-- **Services:** `backend/services/` — business logic (e.g., `StateTokenService`, `StravaOAuthService`)
-- **Helpers:** `backend/helpers/` — utilities (`config.py`, `crypto.py`)
-- **DB models:** `backend/db/models.py` — SQLAlchemy ORM
-- **DB session:** `backend/db/db.py` — async engine + `get_db` dependency
-- **Dependencies:** `backend/dependencies.py` — FastAPI `Depends()` factories
+Each business domain lives in its own folder under `backend/`. Every domain owns its routes, business logic, and schemas. Cross-cutting infrastructure lives in `shared/`.
+
+```
+backend/
+  auth/          # OAuth flow, sessions, users, credentials
+  sync/          # Activity fetch, upsert, cooldown (EPIC-3)
+  goals/         # Goal CRUD, progress computation (EPIC-5)
+  clubs/         # Club fetch, membership, progress view (EPIC-6)
+  privacy/       # Export, deletion, deauth webhook (EPIC-7)
+  shared/        # config, crypto, db, models, rate_limit — used by 2+ domains
+  db/            # Alembic migrations only
+  dependencies.py
+  main.py        # Assembly only: middleware, routers, health endpoints
+```
+
+Each domain contains:
+- `router.py` — `APIRouter` with all routes for this domain
+- `schemas.py` — Pydantic request/response models
+- `<name>_service.py` — business logic (no direct FastAPI imports)
+
+**`shared/` rule:** A module belongs in `shared/` only if it is imported by two or more domains. Single-domain utilities live inside that domain.
+
+## Dependency Injection Convention
+
+- **Factory functions** in `backend/dependencies.py` construct service instances.
+- **Singletons** (e.g., `_crypto`, `limiter`) are module-level in `dependencies.py` or `shared/`.
+- **Endpoints never instantiate services directly** — always use `Depends(factory_fn)`.
+- New services: add a factory function; register singletons at module level, not inside the factory.
+
+```python
+# dependencies.py — correct pattern
+_crypto = Crypto(settings.token_encryption_key)   # singleton
+
+def get_crypto() -> Crypto:
+    return _crypto
+
+def get_strava_oauth_service(
+    state_token_service: StateTokenService = Depends(get_state_token_service),
+) -> StravaOAuthService:
+    return StravaOAuthService(state_token_service)
+```
+
+## Pydantic Schema Convention
+
+- Every endpoint declares a `response_model=` with a named Pydantic `BaseModel`.
+- Request body schemas also use named `BaseModel` classes.
+- Schemas live in `<domain>/schemas.py`.
+- Endpoints return the schema instance, not a raw dict.
+
+```python
+# auth/schemas.py
+class AuthorizeResponse(BaseModel):
+    authorization_url: str
+
+# auth/router.py
+@router.post("/oauth/authorize", response_model=AuthorizeResponse)
+async def oauth_authorize(...) -> AuthorizeResponse:
+    return AuthorizeResponse(authorization_url=url)
+```
+
+## Key Files
+
+- **Config:** `backend/shared/config.py` — `Settings` dataclass + `settings` singleton; add new required vars to `_REQUIRED_ENV_VARS`
+- **Crypto:** `backend/shared/crypto.py` — Fernet encrypt/decrypt for OAuth tokens
+- **DB session:** `backend/shared/db.py` — async engine + `get_db` async generator
+- **ORM models:** `backend/shared/models.py` — SQLAlchemy declarative models
+- **Rate limiter:** `backend/shared/rate_limit.py` — shared `limiter` singleton (registered on `app.state`)
 - **Migrations:** `backend/db/migrations/versions/` — Alembic migration files
-- **Config:** `backend/helpers/config.py` — `Settings` dataclass + `settings` singleton; add new required vars to `_REQUIRED_ENV_VARS`
-- **Crypto:** `backend/helpers/crypto.py` — Fernet encrypt/decrypt for OAuth tokens
 
 ## Key Design Constraints
 
