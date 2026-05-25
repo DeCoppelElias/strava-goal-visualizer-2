@@ -349,7 +349,7 @@ _Generated: May 2, 2026_
 
 ---
 
-#### TASK-1.5.2
+#### TASK-1.5.2 ✅
 
 **Name:** Introduce APIRouter per domain and Pydantic response schemas
 
