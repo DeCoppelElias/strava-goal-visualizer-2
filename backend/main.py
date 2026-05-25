@@ -12,6 +12,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
+from starlette.middleware.sessions import SessionMiddleware
 
 from backend.auth.router import router as auth_router
 from backend.shared.config import settings
@@ -49,6 +50,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 # ---------------------------------------------------------------------------
 app = FastAPI(title="Strava Goal Visualizer API", lifespan=lifespan)
 
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.session_secret_key,
+    https_only=False,
+    same_site="lax",
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.frontend_origin],

@@ -19,4 +19,4 @@ def get_crypto() -> Crypto:
 def get_strava_oauth_service(
     state_token_service: StateTokenService = Depends(get_state_token_service),  # noqa: B008
 ) -> StravaOAuthService:
-    return StravaOAuthService(state_token_service)
+    return StravaOAuthService(state_token_service, _crypto)

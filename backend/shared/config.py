@@ -18,9 +18,9 @@ _REQUIRED_ENV_VARS: list[str] = [
     "DATABASE_URL",
     "TOKEN_ENCRYPTION_KEY",
     "STRAVA_CLIENT_ID",
+    "STRAVA_CLIENT_SECRET",
     "STRAVA_REDIRECT_URI",
-    # EPIC-2:   "SESSION_SECRET_KEY",
-    # EPIC-2:   "STRAVA_CLIENT_SECRET",
+    "SESSION_SECRET_KEY",
 ]
 
 _missing = [v for v in _REQUIRED_ENV_VARS if not os.environ.get(v)]
@@ -35,7 +35,9 @@ class Settings:
     database_url: str
     token_encryption_key: str
     strava_client_id: str
+    strava_client_secret: str
     strava_redirect_uri: str
+    session_secret_key: str
 
 
 settings = Settings(
@@ -43,5 +45,7 @@ settings = Settings(
     database_url=os.environ["DATABASE_URL"],
     token_encryption_key=os.environ["TOKEN_ENCRYPTION_KEY"],
     strava_client_id=os.environ["STRAVA_CLIENT_ID"],
+    strava_client_secret=os.environ["STRAVA_CLIENT_SECRET"],
     strava_redirect_uri=os.environ["STRAVA_REDIRECT_URI"],
+    session_secret_key=os.environ["SESSION_SECRET_KEY"],
 )
