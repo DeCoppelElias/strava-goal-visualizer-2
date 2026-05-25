@@ -1,8 +1,9 @@
 from urllib.parse import urlencode
 
-from backend.helpers.config import settings
-from backend.services.state_token_service import StateTokenService
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.auth.state_token_service import StateTokenService
+from backend.shared.config import settings
 
 STRAVA_AUTH_URL = "https://www.strava.com/oauth/authorize"
 SCOPES = "activity:read_all,profile:read_all"

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem -Path \"D:\\\\VisualStudioProjects\\\\strava-goal-visualizer-2\\\\backend\" -Recurse | Where-Object { -not $_.PSIsContainer })",
+      "PowerShell(Get-ChildItem -Path \"D:\\\\VisualStudioProjects\\\\strava-goal-visualizer-2\\\\tests\" -Recurse | Where-Object { -not $_.PSIsContainer })",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
+    ]
+  }
+}

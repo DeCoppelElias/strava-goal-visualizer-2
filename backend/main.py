@@ -14,10 +14,10 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.db.db import engine, get_db
+from backend.auth.strava_oauth_service import StravaOAuthService
 from backend.dependencies import get_strava_oauth_service
-from backend.helpers.config import settings
-from backend.services.strava_oauth_service import StravaOAuthService
+from backend.shared.config import settings
+from backend.shared.db import engine, get_db
 
 # ---------------------------------------------------------------------------
 # Logging

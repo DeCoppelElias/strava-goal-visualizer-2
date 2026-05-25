@@ -2,12 +2,12 @@ from unittest.mock import AsyncMock, patch
 from urllib.parse import parse_qs, urlparse
 
 import pytest
-from backend.services.strava_oauth_service import SCOPES, STRAVA_AUTH_URL, StravaOAuthService
+from backend.auth.strava_oauth_service import SCOPES, STRAVA_AUTH_URL, StravaOAuthService
 
 
 @pytest.fixture
 def mock_settings():
-    with patch("backend.services.strava_oauth_service.settings") as mock:
+    with patch("backend.auth.strava_oauth_service.settings") as mock:
         mock.strava_client_id = "test_client_id"
         mock.strava_redirect_uri = "http://localhost/callback"
         yield mock

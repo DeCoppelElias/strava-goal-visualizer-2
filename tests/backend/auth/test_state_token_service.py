@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, Mock
 
 import pytest
-from backend.services.state_token_service import (
+from backend.auth.state_token_service import (
     TOKEN_TTL_MINUTES,
     StateTokenService,
 )

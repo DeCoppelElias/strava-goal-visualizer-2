@@ -1,9 +1,9 @@
 from fastapi import Depends
 
-from backend.helpers.config import settings
-from backend.helpers.crypto import Crypto
-from backend.services.state_token_service import StateTokenService
-from backend.services.strava_oauth_service import StravaOAuthService
+from backend.auth.state_token_service import StateTokenService
+from backend.auth.strava_oauth_service import StravaOAuthService
+from backend.shared.config import settings
+from backend.shared.crypto import Crypto
 
 _crypto = Crypto(settings.token_encryption_key)
 
