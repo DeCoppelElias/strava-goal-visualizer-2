@@ -28,6 +28,25 @@ _Generated: May 2, 2026_
 
 ---
 
+### EPIC-1.5 — Architecture Foundation
+
+**Purpose:** Establish domain-driven folder structure, per-domain APIRouters, Pydantic response schemas, and documented conventions before any real feature code is written.
+
+**Why it exists (system evolution order):** EPIC-1 produced a working skeleton with a layer-based structure. Locking in the right patterns before EPIC-2 feature work is far cheaper than refactoring mid-development. Every subsequent epic builds on these conventions.
+
+**Included:**
+- Domain-based folder structure (`auth/`, `sync/`, `goals/`, `clubs/`, `privacy/`, `shared/`)
+- APIRouter per domain; `main.py` becomes a pure assembly file
+- Pydantic response schemas on all existing endpoints
+- DI convention, schema convention, and domain structure documented in `CLAUDE.md` and `design.md`
+
+**Excluded:**
+- Any new features or business logic
+- Repository pattern (excluded by design decision — services call SQLAlchemy directly)
+- Custom exception hierarchy
+
+---
+
 ### EPIC-2 — OAuth Authentication
 
 **Purpose:** Implement the full Strava OAuth flow end-to-end: login, callback, session cookie issuance, session validation, and logout.
@@ -298,6 +317,84 @@ _Generated: May 2, 2026_
 **Complexity:** Small
 
 **Testability:** `docker compose up` → all three containers healthy. `curl http://localhost:8000/health/db` returns ok. Streamlit shows "Backend: connected ✓".
+
+---
+
+### EPIC-1.5 — Architecture Foundation
+
+---
+
+#### TASK-1.5.1
+
+**Name:** Restructure backend into domain folders
+
+**Goal:** Move existing backend files into a domain-driven directory layout without changing any behavior.
+
+**Context:** The current layer-based structure (`services/`, `helpers/`, `db/`) works for a skeleton but doesn't scale across multiple epics. Each business domain owns its code. `shared/` holds cross-cutting concerns. This is a pure refactor — all existing tests must pass unchanged after the move.
+
+**Input:** Existing `backend/` structure from EPIC-1 and EPIC-2 tasks 2.1–2.4.
+
+**Output:**
+- `backend/shared/` — `config.py`, `crypto.py`, `db.py`, `models.py` (moved from `helpers/` and `db/`)
+- `backend/auth/` — `state_token_service.py`, `strava_oauth_service.py` (moved from `services/`)
+- `backend/dependencies.py` — all import paths updated to new locations
+- `backend/main.py` — all import paths updated to new locations
+- All existing tests pass with no changes to test files
+
+**Dependencies:** TASK-1.3, TASK-2.4
+
+**Complexity:** Small
+
+**Testability:** `pytest` reports all 15 tests passing. `uvicorn backend.main:app` starts without import errors.
+
+---
+
+#### TASK-1.5.2
+
+**Name:** Introduce APIRouter per domain and Pydantic response schemas
+
+**Goal:** Move existing routes into domain-specific APIRouters and add Pydantic response models to all existing endpoints.
+
+**Context:** All routes currently live directly on `app` in `main.py`. With the domain structure from TASK-1.5.1, each domain owns its routes via `APIRouter`. Pydantic response models give FastAPI the information it needs to generate correct OpenAPI docs and enforce response shape. This is a zero-behavior-change refactor — no new endpoints.
+
+**Input:** Domain structure from TASK-1.5.1. Existing endpoints: `GET /health`, `GET /health/db`, `POST /oauth/authorize`.
+
+**Output:**
+- `backend/auth/router.py` — `APIRouter` containing `POST /oauth/authorize`
+- `backend/auth/schemas.py` — `AuthorizeResponse(BaseModel)` with `authorization_url: str`
+- `backend/main.py` — health endpoints with inline `HealthResponse` and `DbHealthResponse` schemas; includes auth router via `app.include_router()`; no inline route logic for auth
+- All existing tests pass; `GET /docs` reflects correct response shapes for all endpoints
+
+**Dependencies:** TASK-1.5.1
+
+**Complexity:** Small
+
+**Testability:** `pytest` reports all 15 tests passing. `GET /docs` shows `AuthorizeResponse` schema with `authorization_url` field. `POST /oauth/authorize` returns `{"authorization_url": "..."}` identically to before.
+
+---
+
+#### TASK-1.5.3
+
+**Name:** Document architectural conventions in CLAUDE.md and design.md
+
+**Goal:** Write down the domain structure, DI, and Pydantic schema conventions so every future task follows them without re-deriving the rules.
+
+**Context:** Patterns that aren't written down don't get followed consistently. This task makes the conventions durable across all remaining epics. No code changes — documentation only.
+
+**Input:** Refactored codebase from TASK-1.5.1 and TASK-1.5.2.
+
+**Output:**
+- `CLAUDE.md` updated:
+  - Domain folder map with one-line purpose per domain
+  - DI convention: factory functions in `dependencies.py`; singletons at module level; endpoints never instantiate services directly
+  - Pydantic convention: every endpoint has a named response model; schemas live in `<domain>/schemas.py`
+- `design.md` updated: new "Architecture Patterns" section covering domain structure, DI, and Pydantic schema conventions
+
+**Dependencies:** TASK-1.5.2
+
+**Complexity:** Small
+
+**Testability:** `CLAUDE.md` and `design.md` reviewed against the four architectural decisions: domain folders ✓, APIRouter ✓, Pydantic schemas ✓, DI convention ✓.
 
 ---
 
