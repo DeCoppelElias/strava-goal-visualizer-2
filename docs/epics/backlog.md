@@ -555,7 +555,7 @@ _Generated: May 2, 2026_
 
 ---
 
-#### TASK-2.7
+#### TASK-2.7 ✅
 
 **Name:** Implement `POST /session/logout` and `POST /oauth/revoke`
 
