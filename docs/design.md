@@ -83,6 +83,18 @@ Every endpoint declares a named `response_model` using a Pydantic `BaseModel`. R
 
 A single `Limiter` instance from `backend/shared/rate_limit.py` is registered on `app.state.limiter` and reused across all domain routers. Decorating an endpoint with `@limiter.limit("N/minute")` uses this shared instance and its shared storage backend.
 
+### 6.0.4 Database Access Pattern
+
+All database access uses the SQLAlchemy async ORM. The following conventions apply across all domains:
+
+**Reads:** Use `db.execute(select(Model).where(...))` with `.scalar_one_or_none()` for a single row or `.scalars().all()` for multiple rows.
+
+**Inserts:** Use `db.add(ModelInstance)` to register the object with the session, then `await db.commit()`. Use `await db.flush()` instead of commit when a subsequent query within the same transaction needs the generated primary key.
+
+**Deletes:** Fetch the ORM object first, then `await db.delete(obj)` followed by `await db.commit()`.
+
+**Raw SQL (`text()`):** Permitted only for operations that have no ORM equivalent — for example, complex aggregates or window functions. Never use `text()` for basic CRUD on a table that has an ORM model defined in `shared/models.py`.
+
 ---
 
 ## 6. Architecture

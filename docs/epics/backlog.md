@@ -398,6 +398,30 @@ _Generated: May 2, 2026_
 
 ---
 
+#### TASK-1.5.4 ✅ _(ad-hoc)_
+
+**Name:** Standardize database access to ORM pattern
+
+**Goal:** All database operations on modelled tables use the SQLAlchemy ORM API; raw `text()` SQL is reserved for complex queries with no ORM equivalent.
+
+**Context:** `StateTokenService` was using raw `text()` SQL for INSERT, SELECT, and DELETE on `oauth_state_tokens` despite `OAuthStateToken` being defined in `shared/models.py`. Discovered during TASK-2.7 implementation review.
+
+**Input:** `StateTokenService` using raw SQL. `OAuthStateToken` model already in `shared/models.py`.
+
+**Output:**
+- `backend/auth/state_token_service.py` rewritten to use `db.add()`, `db.execute(select(...))`, `db.delete()`
+- `tests/backend/auth/test_state_token_service.py` rewritten to test ORM behaviour (no SQL-string assertions)
+- `docs/design.md` §6.0.4 documents the ORM access convention with the `text()` fallback rule
+- `CLAUDE.md` updated with the database access rule
+
+**Dependencies:** TASK-1.5.3
+
+**Complexity:** Small
+
+**Testability:** All 33 existing tests pass unchanged after the rewrite.
+
+---
+
 ### EPIC-2 — OAuth Authentication
 
 ---

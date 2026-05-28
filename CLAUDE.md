@@ -128,6 +128,7 @@ async def oauth_authorize(...) -> AuthorizeResponse:
 - Rate limiting via `slowapi` on all auth, sync, and privacy endpoints
 - Session cookies: `HttpOnly`, `Secure`, `SameSite=Lax`; rotated on every login
 - CORS: strict allowlist to `settings.frontend_origin` only
+- **DB access:** Use the ORM for all CRUD on modelled tables — `db.add()` for inserts, `db.execute(select(...))` + `.scalar_one_or_none()` for reads, `db.delete(obj)` for deletes. Reserve `text()` for complex aggregates or window functions only
 
 ---
 
