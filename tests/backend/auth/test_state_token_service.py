@@ -1,143 +1,101 @@
 from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from backend.auth.state_token_service import (
-    TOKEN_TTL_MINUTES,
-    StateTokenService,
-)
+from backend.auth.state_token_service import TOKEN_TTL_MINUTES, StateTokenService
+from backend.shared.models import OAuthStateToken
+
+
+def _mock_db_with_token(token_obj: OAuthStateToken | None) -> AsyncMock:
+    db = AsyncMock()
+    result = MagicMock()
+    result.scalar_one_or_none.return_value = token_obj
+    db.execute.return_value = result
+    return db
 
 
 @pytest.mark.asyncio
 async def test_create_state_token_stores_token_and_expiration():
-    # Arrange
     db = AsyncMock()
-    before_creation = datetime.now(UTC)
+    before = datetime.now(UTC)
 
-    # Act
-    state_token_service = StateTokenService()
-    token = await state_token_service.create_state_token(db)
+    service = StateTokenService()
+    token = await service.create_state_token(db)
 
-    # Assert
-    after_creation = datetime.now(UTC)
+    after = datetime.now(UTC)
 
     assert isinstance(token, str)
     assert len(token) > 0
 
-    db.execute.assert_called_once()
+    db.add.assert_called_once()
+    added = db.add.call_args[0][0]
+    assert isinstance(added, OAuthStateToken)
+    assert added.token == token
+
+    expected_min = before + timedelta(minutes=TOKEN_TTL_MINUTES)
+    expected_max = after + timedelta(minutes=TOKEN_TTL_MINUTES)
+    assert expected_min <= added.expires_at <= expected_max
+
     db.commit.assert_called_once()
-
-    # inspect SQL call
-    query, params = db.execute.call_args.args
-
-    assert "INSERT INTO oauth_state_tokens" in str(query)
-    assert params["token"] == token
-
-    expires_at = params["expires_at"]
-
-    expected_min = before_creation + timedelta(minutes=TOKEN_TTL_MINUTES)
-    expected_max = after_creation + timedelta(minutes=TOKEN_TTL_MINUTES)
-
-    assert expected_min <= expires_at <= expected_max
 
 
 @pytest.mark.asyncio
 async def test_validate_valid_token_returns_true_and_deletes_token():
-    # Arrange
-    db = AsyncMock()
-
     future_expiry = datetime.now(UTC) + timedelta(minutes=5)
+    token_obj = OAuthStateToken(token="valid-token", expires_at=future_expiry)  # noqa: S106
+    db = _mock_db_with_token(token_obj)
 
-    result_mock = Mock()
-    result_mock.fetchone.return_value = (future_expiry,)
+    service = StateTokenService()
+    result = await service.validate_and_consume_state_token(db, "valid-token")
 
-    db.execute.return_value = result_mock
-
-    # Act
-    state_token_service = StateTokenService()
-    result = await state_token_service.validate_and_consume_state_token(
-        db,
-        "valid-token",
-    )
-
-    # Assert
     assert result is True
-    assert db.execute.call_count == 2
+    db.delete.assert_called_once_with(token_obj)
     db.commit.assert_called_once()
 
 
 @pytest.mark.asyncio
 async def test_validate_unknown_token_returns_false():
-    # Arrange
-    db = AsyncMock()
+    db = _mock_db_with_token(None)
 
-    result_mock = Mock()
-    result_mock.fetchone.return_value = None
+    service = StateTokenService()
+    result = await service.validate_and_consume_state_token(db, "unknown-token")
 
-    db.execute.return_value = result_mock
-
-    # Act
-    state_token_service = StateTokenService()
-    result = await state_token_service.validate_and_consume_state_token(
-        db,
-        "unknown-token",
-    )
-
-    # Assert
     assert result is False
-    db.execute.assert_called_once()
+    db.delete.assert_not_called()
     db.commit.assert_not_called()
 
 
 @pytest.mark.asyncio
 async def test_validate_expired_token_returns_false_and_deletes_token():
-    # Arrange
-    db = AsyncMock()
+    expired = datetime.now(UTC) - timedelta(minutes=5)
+    token_obj = OAuthStateToken(token="expired-token", expires_at=expired)  # noqa: S106
+    db = _mock_db_with_token(token_obj)
 
-    expired_time = datetime.now(UTC) - timedelta(minutes=5)
+    service = StateTokenService()
+    result = await service.validate_and_consume_state_token(db, "expired-token")
 
-    result_mock = Mock()
-    result_mock.fetchone.return_value = (expired_time,)
-
-    db.execute.return_value = result_mock
-
-    # Act
-    state_token_service = StateTokenService()
-    result = await state_token_service.validate_and_consume_state_token(
-        db,
-        "expired-token",
-    )
-
-    # Assert
     assert result is False
-    assert db.execute.call_count == 2
+    db.delete.assert_called_once_with(token_obj)
     db.commit.assert_called_once()
 
 
 @pytest.mark.asyncio
 async def test_consumed_token_cannot_be_reused():
-    # Arrange
-    db = AsyncMock()
-
     future_expiry = datetime.now(UTC) + timedelta(minutes=5)
+    token_obj = OAuthStateToken(token="token", expires_at=future_expiry)  # noqa: S106
 
-    first_result = Mock()
-    first_result.fetchone.return_value = (future_expiry,)
+    first_result = MagicMock()
+    first_result.scalar_one_or_none.return_value = token_obj
 
-    second_result = Mock()
-    second_result.fetchone.return_value = None
+    second_result = MagicMock()
+    second_result.scalar_one_or_none.return_value = None
 
-    db.execute.side_effect = [
-        first_result,
-        Mock(),  # DELETE
-        second_result,  # second SELECT
-    ]
+    db = AsyncMock()
+    db.execute.side_effect = [first_result, second_result]
 
-    # Act
-    state_token_service = StateTokenService()
-    first_call = await state_token_service.validate_and_consume_state_token(db, "token")
-    second_call = await state_token_service.validate_and_consume_state_token(db, "token")
+    service = StateTokenService()
+    first_call = await service.validate_and_consume_state_token(db, "token")
+    second_call = await service.validate_and_consume_state_token(db, "token")
 
-    # Assert
     assert first_call is True
     assert second_call is False
