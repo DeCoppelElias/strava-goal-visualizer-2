@@ -10,3 +10,11 @@ class AuthorizeResponse(BaseModel):
 class SessionMeResponse(BaseModel):
     strava_athlete_id: int
     created_at: datetime
+
+
+class LogoutResponse(BaseModel):
+    ok: bool
+
+
+class RevokeResponse(BaseModel):
+    ok: bool

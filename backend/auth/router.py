@@ -6,7 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.auth.dependencies import get_current_user
 from backend.auth.exceptions import InsufficientScopeError, OAuthStateError, StravaAPIError
-from backend.auth.schemas import AuthorizeResponse, SessionMeResponse
+from backend.auth.schemas import (
+    AuthorizeResponse,
+    LogoutResponse,
+    RevokeResponse,
+    SessionMeResponse,
+)
 from backend.auth.strava_oauth_service import StravaOAuthService
 from backend.dependencies import get_strava_oauth_service
 from backend.shared.config import settings
@@ -72,3 +77,25 @@ async def session_me(
         strava_athlete_id=current_user.strava_athlete_id,
         created_at=current_user.created_at,
     )
+
+
+@router.post("/session/logout", response_model=LogoutResponse)
+async def session_logout(
+    request: Request,
+    current_user: User = Depends(get_current_user),  # noqa: B008
+) -> LogoutResponse:
+    request.session.clear()
+    return LogoutResponse(ok=True)
+
+
+@router.post("/oauth/revoke", response_model=RevokeResponse)
+@limiter.limit("10/minute")  # type: ignore[misc]
+async def oauth_revoke(
+    request: Request,
+    current_user: User = Depends(get_current_user),  # noqa: B008
+    db: AsyncSession = Depends(get_db),  # noqa: B008
+    strava_oauth_service: StravaOAuthService = Depends(get_strava_oauth_service),  # noqa: B008
+) -> RevokeResponse:
+    await strava_oauth_service.revoke_tokens(db, user_id=current_user.id)
+    request.session.clear()
+    return RevokeResponse(ok=True)

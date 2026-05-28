@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import urlencode
@@ -12,8 +13,11 @@ from backend.shared.config import settings
 from backend.shared.crypto import Crypto
 from backend.shared.models import OAuthCredentials, User
 
+logger = logging.getLogger(__name__)
+
 STRAVA_AUTH_URL = "https://www.strava.com/oauth/authorize"
 STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token"  # noqa: S105
+STRAVA_DEAUTH_URL = "https://www.strava.com/oauth/deauthorize"
 SCOPES = "activity:read_all,profile:read_all"
 _REQUIRED_SCOPES = {"activity:read_all", "profile:read_all"}
 
@@ -110,3 +114,25 @@ class StravaOAuthService:
             creds.refresh_token_encrypted = self.crypto.encrypt(token_data["refresh_token"])
             creds.token_expires_at = expires_at
             creds.scope = token_data["scope"]
+
+    async def revoke_tokens(self, db: AsyncSession, user_id: int) -> None:
+        result = await db.execute(
+            select(OAuthCredentials).where(OAuthCredentials.user_id == user_id)
+        )
+        creds = result.scalar_one_or_none()
+        if creds is None:
+            return
+
+        access_token = self.crypto.decrypt(creds.access_token_encrypted)
+
+        try:
+            async with httpx.AsyncClient() as client:
+                await client.post(
+                    STRAVA_DEAUTH_URL,
+                    data={"access_token": access_token},
+                )
+        except httpx.HTTPError:
+            logger.warning("Strava deauthorize call failed — proceeding with local token deletion")
+
+        await db.delete(creds)
+        await db.commit()
