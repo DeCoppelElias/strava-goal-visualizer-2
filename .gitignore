@@ -459,3 +459,5 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+docs/superpowers/plans/*
