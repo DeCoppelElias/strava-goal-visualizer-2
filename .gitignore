@@ -424,8 +424,10 @@ htmlcov/
 .env.*
 !.env.example
 
-# Streamlit
-.streamlit/secrets.toml
+# React / Node frontend
+frontend/.env.local
+frontend/dist/
+frontend/*.tsbuildinfo
 
 # Fly.io (contains deployment secrets)
 fly.toml

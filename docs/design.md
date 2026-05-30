@@ -6,7 +6,7 @@ _Last updated: May 2, 2026_
 
 ## 1. Overview
 
-A Strava-integrated application with a Streamlit frontend and FastAPI backend, written in Python, deployed as a shared SaaS product. The app enables athletes to visualize personal running progress toward a yearly goal and view club progress for authorized members of their Strava clubs.
+A Strava-integrated application with a React + Vite frontend and FastAPI backend, deployed as a shared SaaS product. The app enables athletes to visualize personal running progress toward a yearly goal and view club progress for authorized members of their Strava clubs.
 
 ---
 
@@ -43,7 +43,7 @@ A Strava-integrated application with a Streamlit frontend and FastAPI backend, w
 
 - **Model:** Shared SaaS, single shared product instance.
 - **Hosting:** Fly.io.
-- **Topology:** Separate deployments for Streamlit frontend, FastAPI backend, and PostgreSQL.
+- **Topology:** Separate deployments for React frontend (static SPA / Vite dev server), FastAPI backend, and PostgreSQL.
 - **Sync model:** Single synchronous endpoint, manual trigger only with per-user cooldown.
 
 ---

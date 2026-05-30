@@ -604,28 +604,28 @@ _Generated: May 2, 2026_
 
 ---
 
-#### TASK-2.8
+#### TASK-2.8 ✅
 
-**Name:** Streamlit login page and session state
+**Name:** React login page and session state
 
-**Goal:** Streamlit displays a login page for unauthenticated users and a logged-in state for authenticated users, using the session cookie set by the backend.
+**Goal:** React app displays a login page for unauthenticated users and a home page for authenticated users, using the session cookie set by the backend.
 
-**Context:** Without a Streamlit login flow, the OAuth backend cannot be tested by a real user through the UI.
+**Context:** Without a frontend login flow, the OAuth backend cannot be tested by a real user through the UI. React uses `fetch(..., { credentials: 'include' })` so the browser handles the session cookie natively — no workarounds needed.
 
 **Input:** FastAPI OAuth endpoints from TASK-2.4 and TASK-2.5. Session endpoint from TASK-2.6.
 
 **Output:**
-- Streamlit calls `GET /session/me` on every page load to determine auth state
-- Unauthenticated: shows "Connect with Strava" button that POSTs to `/oauth/authorize` and redirects the browser to the returned URL
-- Authenticated: shows athlete ID, "Logout" button that POSTs to `/session/logout`, page reloads to unauthenticated state
-- Session cookie is forwarded on all Streamlit → FastAPI calls (same-site browser context)
-- GDPR document links visible on all pages (even login page)
+- `frontend/src/api/client.ts` — `fetch` wrapper with `credentials: 'include'` on every call; typed functions: `getSessionMe()`, `postOAuthAuthorize()`, `postSessionLogout()`
+- `frontend/src/App.tsx` — reads and clears `?error=` query param on mount; calls `getSessionMe()` on load; renders `LoginPage` or `HomePage` based on auth state
+- `frontend/src/pages/LoginPage.tsx` — displays OAuth error messages; "Connect with Strava" button calls `postOAuthAuthorize()` then sets `window.location.href`
+- `frontend/src/pages/HomePage.tsx` — shows athlete ID; "Logout" button calls `postSessionLogout()` then resets auth state
+- `frontend/src/components/GdprFooter.tsx` — GDPR placeholder links rendered on all pages
 
 **Dependencies:** TASK-2.6, TASK-2.7
 
 **Complexity:** Small
 
-**Testability:** Full browser flow: click "Connect with Strava" → complete OAuth → redirected back → Streamlit shows authenticated state with athlete ID → click Logout → returns to login page.
+**Testability:** Full browser flow: click "Connect with Strava" → complete OAuth → redirected back → React shows authenticated state with athlete ID → click Logout → returns to login page. Hard-refresh while logged in → still authenticated (cookie persists).
 
 ---
 
@@ -750,10 +750,8 @@ _Generated: May 2, 2026_
 **Input:** Sync endpoints from TASK-3.4. Auth state from TASK-2.8.
 
 **Output:**
-- Authenticated Streamlit page: "Sync Activities" button that calls `POST /sync`
-- After sync: raw table of activities (name, date, distance, moving time, sport type) — all synced activity types shown for transparency
-- Last sync timestamp shown prominently
-- Error state shown if sync fails (including "Sync unavailable — try again in X minutes" on 429)
+- `frontend/src/api/client.ts` extended with `postSync()` returning `{ synced_activities: number, last_sync_completed_at: string }`
+- `frontend/src/pages/SyncPage.tsx` — "Sync Activities" button calls `POST /sync`; raw activity table (name, date, distance, moving time, sport type — all synced types shown for transparency); last sync timestamp shown prominently; cooldown error shown on 429 ("Sync unavailable — try again in X minutes")
 
 **Dependencies:** TASK-3.4, TASK-2.8
 
@@ -866,14 +864,8 @@ _Generated: May 2, 2026_
 **Input:** `GET /dashboard/personal`. `PUT /goals`. Sync status from TASK-3.5.
 
 **Output:**
-- Progress bar: distance to date vs. goal
-- Pace line chart: cumulative distance over year vs. linear goal pace
-- Key stats: total km, % complete, on-pace indicator
-- All displayed metrics are based on running activities only (`sport_type = 'Run'`); non-running activities are never shown in stats or charts
-- Goal edit: number input + save button, immediate page refresh on save
-- Last sync timestamp shown
-- Empty state: "No running activities found — sync your data to get started"
-- GDPR links visible on page
+- `frontend/src/api/client.ts` extended with `getPersonalDashboard()` and `putGoal(km: number)`
+- `frontend/src/pages/DashboardPage.tsx` — progress bar (distance to date vs goal); pace line chart using Recharts (cumulative distance over year vs linear goal pace); key stats (total km, % complete, on-pace indicator); all metrics running-only (`sport_type = 'Run'`); goal edit: number input + save button; last sync timestamp; empty state: "No running activities found — sync your data to get started"; GDPR links visible
 
 **Dependencies:** TASK-5.3, TASK-3.5
 
@@ -1002,11 +994,8 @@ _Generated: May 2, 2026_
 **Input:** `GET /clubs`. `GET /clubs/{id}/progress`.
 
 **Output:**
-- Club switcher: selectbox populated from `GET /clubs`
-- Per-member progress bar list for selected club
-- Persistent disclaimer: "This club view shows members who have connected this app. It is a progress visualization, not a competition leaderboard."
-- Empty state: "No other members of this club have connected the app yet."
-- GDPR links visible
+- `frontend/src/api/client.ts` extended with `getClubs()` and `getClubProgress(clubId: number)`
+- `frontend/src/pages/ClubsPage.tsx` — club select dropdown from `GET /clubs`; per-member progress bar list for selected club; persistent disclaimer: "This club view shows members who have connected this app. It is a progress visualization, not a competition leaderboard."; empty state: "No other members of this club have connected the app yet."; GDPR links visible
 
 **Dependencies:** TASK-6.4, TASK-2.8
 
@@ -1153,10 +1142,7 @@ _Generated: May 2, 2026_
 **Input:** `POST /privacy/export`. `POST /privacy/delete`. Auth state.
 
 **Output:**
-- Privacy page accessible from all pages
-- "Download My Data" button → calls `POST /privacy/export` → triggers browser file download
-- "Delete My Account" button → confirmation dialog ("This will permanently delete all your data. This cannot be undone.") → on confirm calls `POST /privacy/delete` → redirects to login page
-- GDPR document links visible
+- `frontend/src/pages/PrivacyPage.tsx` — "Download My Data" button calls `POST /privacy/export` and triggers a browser file download; "Delete My Account" button shows a confirmation step ("This will permanently delete all your data. This cannot be undone.") then calls `POST /privacy/delete` and redirects to the login page; GDPR document links visible
 
 **Dependencies:** TASK-7.3, TASK-7.4, TASK-2.8
 

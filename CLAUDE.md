@@ -2,10 +2,10 @@
 
 ## Project Overview
 
-FastAPI backend + Streamlit frontend + PostgreSQL. Strava OAuth for authentication. Users visualize yearly running goals and club progress.
+FastAPI backend + React frontend + PostgreSQL. Strava OAuth for authentication. Users visualize yearly running goals and club progress.
 
 - **Backend:** `backend/` — FastAPI (async), SQLAlchemy async, Alembic migrations, slowapi rate limiting
-- **Frontend:** `frontend/` — Streamlit
+- **Frontend:** `frontend/` — React + Vite (TypeScript); all API calls via `src/api/client.ts` with `credentials: 'include'`
 - **DB:** PostgreSQL via SQLAlchemy async + Alembic
 - **Tests:** `tests/`
 
