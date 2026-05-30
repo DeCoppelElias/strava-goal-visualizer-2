@@ -463,3 +463,6 @@ FodyWeavers.xsd
 *.msp
 
 docs/superpowers/plans/*
+
+# Claude Code local settings (machine-specific overrides)
+.claude/settings.local.json

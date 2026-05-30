@@ -16,17 +16,22 @@ FastAPI backend + React frontend + PostgreSQL. Strava OAuth for authentication. 
 Every task follows this exact sequence (see `docs/workflow.md` for authoritative version):
 
 ### 1. PLAN MODE
+- **Skill:** invoke `brainstorming` before planning any new feature or non-trivial change
 - Read only the relevant task from `docs/epics/backlog.md` (not the whole file)
 - Consult `docs/design.md` only when architecture decisions are needed
 - Identify scope, gaps, and questions
+- **Skill:** invoke `writing-plans` to produce the structured implementation plan
 - **STOP if any uncertainty exists — ask before proceeding**
 
 ### 2. EXEC MODE
 - Only after explicit approval from user ("yes", "looks good", "go ahead", etc.)
+- **Skill:** invoke `test-driven-development` before writing implementation code
 - Implement minimal solution — no scope expansion, no silent refactors
 - If something broken is found outside scope: flag it and ask — never fix silently
+- **Skill:** invoke `systematic-debugging` when any bug or unexpected behaviour is encountered
 
 ### 3. VALIDATION MODE
+- **Skill:** invoke `verification-before-completion` before marking a task `✅` or committing
 - Explain changes made
 - Provide test steps
 - List edge cases
