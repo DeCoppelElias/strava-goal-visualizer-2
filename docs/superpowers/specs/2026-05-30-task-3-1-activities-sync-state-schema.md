@@ -20,7 +20,7 @@ The model is named `Activity` and stores all Strava activity types. `sport_type`
 `Numeric` avoids floating-point rounding errors. Strava returns meter values as floats but storing them as `Numeric` is more principled for a distance field.
 
 ### `SyncState` uses `user_id` as PK
-One sync state row per user. No surrogate key needed — `user_id` is both the PK and the FK. `last_sync_completed_at` is nullable (null = never synced). No separate `updated_at` column because `last_sync_completed_at` already serves as the update timestamp.
+One sync state row per user. No surrogate key needed — `user_id` is both the PK and the FK. `last_sync_completed_at` is NOT NULL — the absence of a row means "never synced". The sync engine inserts on first sync and upserts on subsequent syncs. No separate `updated_at` column because `last_sync_completed_at` already serves as the update timestamp.
 
 ### Index on `(user_id, start_date)`
 Added proactively for goal progress queries (EPIC-5) that will filter by user and date range. At typical Strava user data volumes (hundreds to low thousands of activities), a partial index is not needed.
@@ -52,7 +52,7 @@ Added proactively for goal progress queries (EPIC-5) that will filter by user an
 | Column | Type | Constraints |
 |---|---|---|
 | `user_id` | `Integer` | PK + FK → `users.id` |
-| `last_sync_completed_at` | `DateTime(timezone=True)` | nullable |
+| `last_sync_completed_at` | `DateTime(timezone=True)` | not null |
 
 ---
 
@@ -86,9 +86,7 @@ class SyncState(Base):
     __tablename__ = "sync_state"
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
-    last_sync_completed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    last_sync_completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     user: Mapped["User"] = relationship(back_populates="sync_state")
 ```
@@ -116,4 +114,5 @@ File: `backend/db/migrations/versions/0002_create_sync_tables.py`
 - Tables visible in `psql` after `alembic upgrade head`
 - Backend starts without migration errors
 - Inserting two activities with the same `(user_id, strava_activity_id)` raises an integrity error
-- Inserting a `SyncState` row with `last_sync_completed_at = None` succeeds
+- No `sync_state` row exists for a new user (never synced)
+- Inserting a `SyncState` row with a real timestamp succeeds; inserting without `last_sync_completed_at` raises an integrity error
