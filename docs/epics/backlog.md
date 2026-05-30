@@ -84,8 +84,7 @@ _Generated: May 2, 2026_
 **Included:**
 - `POST /sync` endpoint (triggers full activity fetch for authenticated user's own data, with cooldown enforcement)
 - Activity fetch from Strava API (current-year activities only, paginated, full fetch — no incremental logic)
-- Activity upsert into PostgreSQL (by Strava activity ID) — all activity types are stored as received from Strava
-- Only activities with `sport_type = 'Run'` are used in any business logic or computation; non-running activities are stored but never included in metrics
+- Activity upsert into PostgreSQL (by Strava activity ID) — only `sport_type = 'Run'` activities are stored; non-running activities are discarded at ingest before any DB write (data minimization)
 - Per-user cooldown enforcement: 10-minute cooldown, `429 Too Many Requests` + `Retry-After` on violation
 - `last_sync_completed_at` timestamp stored per user
 - Streamlit page that triggers sync and shows raw activity list
@@ -725,8 +724,8 @@ _Generated: May 2, 2026_
 - Validates ownership (own athlete ID only)
 - Checks `last_sync_completed_at`; if within the last 10 minutes, returns `429 Too Many Requests` with `Retry-After: <seconds_until_eligible>` header
 - Fetches all pages of current-year activities from Strava
-- Upserts into `activities` table by `(user_id, strava_activity_id)` — all activity types stored as received
-- Business logic downstream must filter `sport_type = 'Run'`; the sync endpoint itself does not filter before storage
+- Filters fetched activities to `sport_type = 'Run'` before any DB write — non-running activities are discarded at ingest
+- Upserts into `activities` table by `(user_id, strava_activity_id)` — only running activities stored
 - On success: sets `last_sync_completed_at = now()`
 - On failure: surfaces error directly; `last_sync_completed_at` is not updated
 - Requires authentication; runs synchronously in-process
@@ -751,7 +750,7 @@ _Generated: May 2, 2026_
 
 **Output:**
 - `frontend/src/api/client.ts` extended with `postSync()` returning `{ synced_activities: number, last_sync_completed_at: string }`
-- `frontend/src/pages/SyncPage.tsx` — "Sync Activities" button calls `POST /sync`; raw activity table (name, date, distance, moving time, sport type — all synced types shown for transparency); last sync timestamp shown prominently; cooldown error shown on 429 ("Sync unavailable — try again in X minutes")
+- `frontend/src/pages/SyncPage.tsx` — "Sync Activities" button calls `POST /sync`; raw running activity table (name, date, distance, moving time); last sync timestamp shown prominently; cooldown error shown on 429 ("Sync unavailable — try again in X minutes")
 
 **Dependencies:** TASK-3.4, TASK-2.8
 
@@ -840,8 +839,7 @@ _Generated: May 2, 2026_
     "last_sync_completed_at": "..."
   }
   ```
-- **Filter by running activities only:** queries must include `WHERE sport_type = 'Run'` (or equivalent ORM condition); non-running activities must not contribute to any of the above values
-- Filters activities by `user_id`, `sport_type = 'Run'`, `start_date` in current calendar year
+- Filters activities by `user_id` and `start_date` in current calendar year — all stored activities are already runs, no `sport_type` filter needed at query time
 - `on_pace`: `distance_to_date_km >= expected_km_by_today` (linear pace model)
 - Only own data returned (enforced by `get_current_user`)
 
@@ -865,7 +863,7 @@ _Generated: May 2, 2026_
 
 **Output:**
 - `frontend/src/api/client.ts` extended with `getPersonalDashboard()` and `putGoal(km: number)`
-- `frontend/src/pages/DashboardPage.tsx` — progress bar (distance to date vs goal); pace line chart using Recharts (cumulative distance over year vs linear goal pace); key stats (total km, % complete, on-pace indicator); all metrics running-only (`sport_type = 'Run'`); goal edit: number input + save button; last sync timestamp; empty state: "No running activities found — sync your data to get started"; GDPR links visible
+- `frontend/src/pages/DashboardPage.tsx` — progress bar (distance to date vs goal); pace line chart using Recharts (cumulative distance over year vs linear goal pace); key stats (total km, % complete, on-pace indicator); goal edit: number input + save button; last sync timestamp; empty state: "No running activities found — sync your data to get started"; GDPR links visible
 
 **Dependencies:** TASK-5.3, TASK-3.5
 
@@ -971,8 +969,7 @@ _Generated: May 2, 2026_
   ]
   ```
 - Uses each member's own goal for their percentage
-- **Filter by running activities only:** per-member distance is computed with `WHERE sport_type = 'Run'` (or equivalent ORM condition); non-running activities must not contribute to any member's distance or progress percentage
-- Filters to current-year running activities (`sport_type = 'Run'`) per member
+- Filters to current-year activities per member — all stored activities are already runs, no `sport_type` filter needed at query time
 - Does NOT expose other users' tokens, raw activities, or PII beyond the above fields
 
 **Dependencies:** TASK-6.3, TASK-5.3

@@ -128,7 +128,7 @@ async def oauth_authorize(...) -> AuthorizeResponse:
 
 ## Key Design Constraints
 
-- Only `sport_type = 'Run'` activities count toward any metric — enforced at query time, never at storage time
+- Only `sport_type = 'Run'` activities are stored — filtered at ingest time. Strava returns all activity types; the sync engine discards non-running activities before any DB write. All stored activities are runs.
 - Tokens are never logged anywhere
 - Rate limiting via `slowapi` on all auth, sync, and privacy endpoints
 - Session cookies: `HttpOnly`, `Secure`, `SameSite=Lax`; rotated on every login

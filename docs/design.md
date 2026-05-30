@@ -168,7 +168,7 @@ All database access uses the SQLAlchemy async ORM. The following conventions app
 - A user can request sync for their own account via the Streamlit UI or the `POST /sync` endpoint.
 - Sync is synchronous and stateless except for a cooldown timestamp (`last_sync_completed_at`).
 - On each sync, the backend fetches all Strava activities in full (no incremental or cursor-based logic) and upserts them into the database by `strava_activity_id`.
-- All activity types are stored. Only activities with `sport_type = 'Run'` are used in any business logic or computation (see §8.5).
+- Only activities with `sport_type = 'Run'` are stored — non-running activities are discarded at ingest before any DB write (see §8.5).
 - On success, `last_sync_completed_at` is set to the current time.
 - The backend enforces a 10-minute per-user cooldown: if a sync completed in the last 10 minutes, the request is rejected with `429 Too Many Requests` and a `Retry-After` header indicating when the next sync is allowed.
 - There is no auto-trigger on dashboard open.
@@ -204,9 +204,9 @@ This is the single, non-negotiable filter that governs all business logic in the
 - The rule applies uniformly across: personal dashboard, club progress view, all backend computation endpoints.
 
 **Storage rule:**
-- All activity types received from the Strava API may be stored in the database as-is.
-- Every query that feeds business logic **must** include a `WHERE sport_type = 'Run'` filter (or equivalent ORM condition).
-- No additional filtering pipeline or tagging system is introduced; the filter is applied directly at query time.
+- Only `sport_type = 'Run'` activities are persisted. Non-running activities are discarded at ingest before any DB write.
+- This follows the GDPR data minimization principle: the app's purpose is running goal visualization; storing cycling, swimming, or other activity types has no justification.
+- Because all stored activities are runs, no `sport_type` filter is needed at query time.
 
 **Definition:** A running activity is any Strava activity whose `sport_type` field equals the string `"Run"` exactly. No other sport types are treated as equivalent.
 
