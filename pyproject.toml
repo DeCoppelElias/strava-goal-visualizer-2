@@ -24,6 +24,7 @@ backend = [
     "python-dotenv>=1.0",
     "alembic>=1.13",
     "slowapi>=0.1.9",
+    "itsdangerous>=2.2",
 ]
 dev = [
     "pytest>=8.2",
@@ -96,3 +97,4 @@ ignore_missing_imports = true
 asyncio_mode = "auto"
 testpaths = ["tests"]
 addopts = "-q"
+pythonpath = ["."]
