@@ -8,3 +8,7 @@ class InsufficientScopeError(Exception):
 
 class StravaAPIError(Exception):
     pass
+
+
+class TokenRefreshError(Exception):
+    pass

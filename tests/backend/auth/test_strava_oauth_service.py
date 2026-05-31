@@ -1,3 +1,4 @@
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 from urllib.parse import parse_qs, urlparse
 
@@ -19,7 +20,7 @@ _VALID_STRAVA_TOKEN_RESPONSE = {
 def mock_settings():
     with patch("backend.auth.strava_oauth_service.settings") as mock:
         mock.strava_client_id = "test_client_id"
-        mock.strava_client_secret = "test_client_secret"  # noqa: S105
+        mock.strava_client_secret = "test_client_secret"
         mock.strava_redirect_uri = "http://localhost/callback"
         yield mock
 
@@ -194,3 +195,128 @@ async def test_process_callback_stores_encrypted_tokens(mock_settings, mock_cryp
 
     mock_crypto.encrypt.assert_any_call("access_abc")
     mock_crypto.encrypt.assert_any_call("refresh_xyz")
+
+
+# ---------------------------------------------------------------------------
+# ensure_fresh_token
+# ---------------------------------------------------------------------------
+
+
+def _make_creds(*, expires_in_seconds: float) -> MagicMock:
+    """Returns a mock OAuthCredentials with configurable expiry."""
+    creds = MagicMock()
+    creds.access_token_encrypted = "enc_access_abc"
+    creds.refresh_token_encrypted = "enc_refresh_xyz"
+    creds.token_expires_at = datetime.now(UTC) + timedelta(seconds=expires_in_seconds)
+    return creds
+
+
+def _make_creds_db(creds: MagicMock | None) -> AsyncMock:
+    """Returns a mocked AsyncSession whose single execute() returns the given creds."""
+    db = AsyncMock()
+    result = MagicMock()
+    result.scalar_one_or_none.return_value = creds
+    db.execute.return_value = result
+    return db
+
+
+def _patch_httpx_refresh(
+    status_code: int = 200,
+    response_json: dict | None = None,
+) -> MagicMock:
+    """Patches httpx.AsyncClient for the Strava token refresh POST call."""
+    mock_response = MagicMock()
+    mock_response.status_code = status_code
+    mock_response.json.return_value = response_json or {}
+    if status_code not in (200, 401):
+        mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+            "error", request=MagicMock(), response=MagicMock()
+        )
+
+    mock_client = AsyncMock()
+    mock_client.post = AsyncMock(return_value=mock_response)
+
+    mock_cls = MagicMock()
+    mock_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_cls.return_value.__aexit__ = AsyncMock(return_value=False)
+
+    return patch("backend.auth.strava_oauth_service.httpx.AsyncClient", mock_cls)
+
+
+@pytest.mark.asyncio
+async def test_ensure_fresh_token_returns_token_without_refresh_when_not_expired(
+    mock_settings, mock_crypto
+):
+    creds = _make_creds(expires_in_seconds=3600)
+    db = _make_creds_db(creds)
+    mock_crypto.decrypt.side_effect = lambda s: s.removeprefix("enc_")
+
+    service = StravaOAuthService(AsyncMock(), mock_crypto)
+    token = await service.ensure_fresh_token(db, user_id=1)
+
+    assert token == "access_abc"
+    db.commit.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_ensure_fresh_token_calls_strava_and_updates_db_when_expired(
+    mock_settings, mock_crypto
+):
+    creds = _make_creds(expires_in_seconds=60)  # within 5-min buffer
+    db = _make_creds_db(creds)
+    mock_crypto.decrypt.side_effect = lambda s: s.removeprefix("enc_")
+    mock_crypto.encrypt.side_effect = lambda s: f"enc_{s}"
+
+    refresh_response = {
+        "access_token": "new_access",
+        "refresh_token": "new_refresh",
+        "expires_at": 9999999999,
+    }
+    service = StravaOAuthService(AsyncMock(), mock_crypto)
+
+    with _patch_httpx_refresh(status_code=200, response_json=refresh_response):
+        token = await service.ensure_fresh_token(db, user_id=1)
+
+    assert token == "new_access"
+    assert creds.access_token_encrypted == "enc_new_access"
+    assert creds.refresh_token_encrypted == "enc_new_refresh"
+    db.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_ensure_fresh_token_raises_when_no_credentials(mock_settings, mock_crypto):
+    from backend.auth.exceptions import TokenRefreshError
+
+    db = _make_creds_db(None)
+    service = StravaOAuthService(AsyncMock(), mock_crypto)
+
+    with pytest.raises(TokenRefreshError):
+        await service.ensure_fresh_token(db, user_id=99)
+
+
+@pytest.mark.asyncio
+async def test_ensure_fresh_token_raises_on_strava_401(mock_settings, mock_crypto):
+    from backend.auth.exceptions import TokenRefreshError
+
+    creds = _make_creds(expires_in_seconds=60)
+    db = _make_creds_db(creds)
+    mock_crypto.decrypt.side_effect = lambda s: s.removeprefix("enc_")
+
+    service = StravaOAuthService(AsyncMock(), mock_crypto)
+
+    with _patch_httpx_refresh(status_code=401), pytest.raises(TokenRefreshError):
+        await service.ensure_fresh_token(db, user_id=1)
+
+
+@pytest.mark.asyncio
+async def test_ensure_fresh_token_raises_on_strava_server_error(mock_settings, mock_crypto):
+    from backend.auth.exceptions import TokenRefreshError
+
+    creds = _make_creds(expires_in_seconds=60)
+    db = _make_creds_db(creds)
+    mock_crypto.decrypt.side_effect = lambda s: s.removeprefix("enc_")
+
+    service = StravaOAuthService(AsyncMock(), mock_crypto)
+
+    with _patch_httpx_refresh(status_code=500), pytest.raises(TokenRefreshError):
+        await service.ensure_fresh_token(db, user_id=1)

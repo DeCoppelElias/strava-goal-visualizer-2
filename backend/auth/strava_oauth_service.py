@@ -1,5 +1,5 @@
 import logging
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from urllib.parse import urlencode
 
@@ -7,7 +7,12 @@ import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.auth.exceptions import InsufficientScopeError, OAuthStateError, StravaAPIError
+from backend.auth.exceptions import (
+    InsufficientScopeError,
+    OAuthStateError,
+    StravaAPIError,
+    TokenRefreshError,
+)
 from backend.auth.state_token_service import StateTokenService
 from backend.shared.config import settings
 from backend.shared.crypto import Crypto
@@ -136,3 +141,42 @@ class StravaOAuthService:
 
         await db.delete(creds)
         await db.commit()
+
+    async def ensure_fresh_token(self, db: AsyncSession, user_id: int) -> str:
+        result = await db.execute(
+            select(OAuthCredentials).where(OAuthCredentials.user_id == user_id)
+        )
+        creds = result.scalar_one_or_none()
+
+        if creds is None:
+            raise TokenRefreshError(f"No OAuth credentials for user {user_id}")
+
+        if creds.token_expires_at - datetime.now(UTC) > timedelta(minutes=5):
+            return self.crypto.decrypt(creds.access_token_encrypted)
+
+        refresh_token = self.crypto.decrypt(creds.refresh_token_encrypted)
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                STRAVA_TOKEN_URL,
+                data={
+                    "client_id": settings.strava_client_id,
+                    "client_secret": settings.strava_client_secret,
+                    "grant_type": "refresh_token",
+                    "refresh_token": refresh_token,
+                },
+            )
+            if response.status_code == 401:
+                raise TokenRefreshError("Strava refresh rejected — credentials revoked")
+            try:
+                response.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                raise TokenRefreshError(f"Strava refresh failed: {exc}") from exc
+            token_data: dict[str, Any] = response.json()
+
+        creds.access_token_encrypted = self.crypto.encrypt(token_data["access_token"])
+        creds.refresh_token_encrypted = self.crypto.encrypt(token_data["refresh_token"])
+        creds.token_expires_at = datetime.fromtimestamp(token_data["expires_at"], tz=UTC)
+        await db.commit()
+
+        return token_data["access_token"]  # type: ignore[no-any-return]
