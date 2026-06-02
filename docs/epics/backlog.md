@@ -657,7 +657,7 @@ _Generated: May 2, 2026_
 
 ---
 
-#### TASK-3.2
+#### TASK-3.2 ✅
 
 **Name:** Implement Strava API client (activity fetch)
 
@@ -683,7 +683,7 @@ _Generated: May 2, 2026_
 
 ---
 
-#### TASK-3.3
+#### TASK-3.3 ✅
 
 **Name:** Implement token refresh utility
 
@@ -705,6 +705,147 @@ _Generated: May 2, 2026_
 **Complexity:** Small
 
 **Testability:** Unit test with mocked Strava: fresh token returned without refresh call. Expired token triggers refresh and DB update. Refresh failure raises `TokenRefreshError`.
+
+---
+
+#### TASK-3.3.1 ✅ _(ad-hoc)_
+
+**Name:** Fix `token_expires_at` missing timezone on `OAuthCredentials`
+
+**Goal:** Make `OAuthCredentials.token_expires_at` timezone-aware so that `ensure_fresh_token` does not crash on every call in production.
+
+**Context:** `OAuthCredentials.token_expires_at` is declared as `mapped_column()` with no `DateTime(timezone=True)`. PostgreSQL therefore stores and returns a naive datetime. `ensure_fresh_token` subtracts `datetime.now(UTC)` (an aware datetime) from this naive value, which raises `TypeError: can't subtract offset-naive and offset-aware datetimes` on every invocation. By contrast, `Activity.start_date` and `SyncState.last_sync_completed_at` already correctly use `DateTime(timezone=True)`. This is a pre-production crash that blocks TASK-3.4.
+
+**Input:** `backend/shared/models.py`. Alembic migration history in `backend/db/migrations/versions/`.
+
+**Output:**
+- `backend/shared/models.py` — `OAuthCredentials.token_expires_at` changed to `mapped_column(DateTime(timezone=True))`
+- New Alembic migration that `ALTER COLUMN token_expires_at TYPE TIMESTAMPTZ USING token_expires_at AT TIME ZONE 'UTC'`
+- `OAuthStateToken.expires_at` audited for the same issue and fixed if affected
+
+**Dependencies:** TASK-3.3
+
+**Complexity:** Small
+
+**Testability:** `uv run pytest` passes. `ensure_fresh_token` called with a fresh-from-DB `OAuthCredentials` row does not raise `TypeError`. Migration applies cleanly against the existing schema.
+
+---
+
+#### TASK-3.3.2 ✅ _(ad-hoc)_
+
+**Name:** Wrap httpx network errors in domain exceptions
+
+**Goal:** Network-level failures (`ConnectError`, `TimeoutException`, etc.) from httpx are caught and re-raised as the correct domain exception in both `ensure_fresh_token` and `fetch_activities`, instead of propagating as raw `httpx.RequestError`.
+
+**Context:** Both methods only catch `httpx.HTTPStatusError` (raised by `raise_for_status()`). A DNS failure, connection timeout, or TLS error raises `httpx.RequestError`, which is not a subclass of `HTTPStatusError` and therefore escapes all error handling, surfacing as an unhandled 500. Callers that catch `TokenRefreshError` or `StravaAPIError` to degrade gracefully will miss these failures entirely.
+
+**Input:** `backend/auth/strava_oauth_service.py` — `ensure_fresh_token`. `backend/sync/strava_client.py` — `fetch_activities`.
+
+**Output:**
+- `ensure_fresh_token`: the entire `async with httpx.AsyncClient()` block wrapped in an outer `try/except httpx.RequestError` that raises `TokenRefreshError`
+- `fetch_activities`: the same outer guard, raising `StravaAPIError`
+- Tests added for both: mock `httpx.ConnectError` → correct domain exception raised
+
+**Dependencies:** TASK-3.3, TASK-3.2
+
+**Complexity:** Small
+
+**Testability:** Unit tests: patching `httpx.AsyncClient` to raise `httpx.ConnectError` → `ensure_fresh_token` raises `TokenRefreshError`; `fetch_activities` raises `StravaAPIError`. Existing tests continue to pass.
+
+---
+
+#### TASK-3.3.3 ✅ _(ad-hoc)_
+
+**Name:** Guard against malformed Strava token responses
+
+**Goal:** Prevent unhandled `KeyError` when Strava returns an unexpected 200 OK body in `ensure_fresh_token`.
+
+**Context:** After a successful HTTP POST to the token endpoint, `ensure_fresh_token` accesses `token_data["access_token"]`, `token_data["refresh_token"]`, and `token_data["expires_at"]` directly. These key lookups are outside the `try/except HTTPStatusError` block, so a 200 OK response with an unexpected body (e.g. Strava API change, rate-limit response shaped like success) raises an unhandled `KeyError` instead of a `TokenRefreshError`. Callers have no way to catch this.
+
+**Input:** `backend/auth/strava_oauth_service.py` — `ensure_fresh_token`, specifically the block after `response.raise_for_status()`.
+
+**Output:**
+- The three key accesses wrapped in a `try/except KeyError` that raises `TokenRefreshError("Strava token response missing expected fields")`
+- Test added: mock a 200 response with `{}` body → `TokenRefreshError` raised
+- `# type: ignore[no-any-return]` on the final return replaced with an explicit `cast(str, ...)`
+
+**Dependencies:** TASK-3.3
+
+**Complexity:** Small
+
+**Testability:** Unit test: patch `httpx.AsyncClient` to return `httpx.Response(200, json={})` → `ensure_fresh_token` raises `TokenRefreshError`. Existing passing tests unchanged.
+
+---
+
+#### TASK-3.3.4 ✅ _(ad-hoc)_
+
+**Name:** Consolidate duplicate `StravaAPIError` class
+
+**Goal:** Remove the two independent `StravaAPIError` definitions so callers can catch a single type for all Strava HTTP errors.
+
+**Context:** `backend/auth/exceptions.py` and `backend/sync/exceptions.py` each define a `class StravaAPIError(Exception): pass`. These are separate Python types. A caller that imports `StravaAPIError` from one module will silently miss errors raised by code that imports from the other. Per the `shared/` rule ("a module belongs in `shared/` only if imported by two or more domains"), a single `StravaAPIError` belongs in `backend/shared/exceptions.py`. A combined error handler registered in `main.py` cannot currently catch both with one `except` clause.
+
+**Input:** `backend/auth/exceptions.py`. `backend/sync/exceptions.py`. All call sites importing either class.
+
+**Output:**
+- New `backend/shared/exceptions.py` with a single `StravaAPIError(Exception)` base class
+- `backend/auth/exceptions.py` — removes its local `StravaAPIError`; imports it from `backend.shared.exceptions`
+- `backend/sync/exceptions.py` — removes its local `StravaAPIError`; imports it from `backend.shared.exceptions`
+- All existing import paths updated across the codebase
+- No behavior change; all existing tests pass
+
+**Dependencies:** TASK-3.2, TASK-3.3
+
+**Complexity:** Small
+
+**Testability:** `from backend.auth.exceptions import StravaAPIError` and `from backend.sync.exceptions import StravaAPIError` resolve to the same class. `pytest` passes. `except StravaAPIError` in a single handler catches errors from both `fetch_activities` and `ensure_fresh_token`.
+
+---
+
+#### TASK-3.3.5 ✅ _(ad-hoc)_
+
+**Name:** Add `fetch_all_activities` pagination helper
+
+**Goal:** Prevent silent data loss for users with more than 200 activities by providing a single call that handles full pagination internally.
+
+**Context:** `fetch_activities` fetches one page only. The TASK-3.4 sync engine is supposed to fetch all pages, but a bare `fetch_activities(token)` call looks complete, making it easy to write sync code that silently drops all activities beyond the first 200. Adding a `fetch_all_activities` helper that loops internally eliminates this footgun. TASK-3.4 should call `fetch_all_activities`, not `fetch_activities`, for the full sync.
+
+**Input:** `backend/sync/strava_client.py`.
+
+**Output:**
+- `backend/sync/strava_client.py` — new `async def fetch_all_activities(access_token: str, *, after: int | None = None) -> list[dict[str, Any]]` that calls `fetch_activities` in a loop, incrementing `page`, and stops when a page returns fewer than `per_page` results
+- `fetch_activities` kept as-is for single-page use and testability
+- Tests: empty last page stops the loop; single full page + empty second page returns correct total; a user with exactly 200 activities (one full page) does not trigger a second unnecessary request
+
+**Dependencies:** TASK-3.2
+
+**Complexity:** Small
+
+**Testability:** Unit tests using `respx`: 2 full pages + 1 empty page → correct combined list returned; 0 activities → empty list; exactly 200 activities (one full page, then empty) → only 2 requests made.
+
+---
+
+#### TASK-3.3.6 ✅ _(ad-hoc)_
+
+**Name:** Define transaction ownership convention and fix service-level commits
+
+**Goal:** Prevent service methods from committing an outer session they do not own, which would silently flush a caller's pending ORM state mid-operation.
+
+**Context:** `ensure_fresh_token` calls `await db.commit()` after writing refreshed tokens. When TASK-3.4 implements the sync engine, it will likely stage ORM objects (e.g. a new `SyncState` row) on the same `AsyncSession` before calling `ensure_fresh_token` to get a token. The commit inside `ensure_fresh_token` would flush that partially-built state before the caller has validated or completed it, leaving the DB in an inconsistent state. `revoke_tokens` has the same pattern but is only called from a dedicated endpoint and is lower risk. The fix is for `ensure_fresh_token` to use a nested savepoint or require the caller to own the commit; the simplest option is to drop the commit from `ensure_fresh_token` and document that callers are responsible for committing the session.
+
+**Input:** `backend/auth/strava_oauth_service.py` — `ensure_fresh_token`. `docs/design.md`.
+
+**Output:**
+- `ensure_fresh_token` drops its `await db.commit()` call; the method only modifies `creds.*` fields on the ORM object and returns the plaintext token
+- All callers updated to commit after calling `ensure_fresh_token` (currently none outside tests)
+- `docs/design.md` — new subsection under service conventions: "Transaction ownership: service methods mutate ORM objects but do not commit. The router or calling service owns `db.commit()`." (consistent with how `_upsert_credentials` in the same file already behaves)
+- Tests updated: `db.commit.assert_not_called()` on the token-still-valid path stays; the refresh path now asserts the session was dirtied but commit is left to the caller
+
+**Dependencies:** TASK-3.3
+
+**Complexity:** Small
+
+**Testability:** Unit tests pass. Calling `ensure_fresh_token` with an expired token updates `creds.*` fields but does NOT call `db.commit()`. The caller controls when to flush.
 
 ---
 
