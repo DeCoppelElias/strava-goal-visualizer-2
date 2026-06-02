@@ -353,3 +353,20 @@ async def test_ensure_fresh_token_raises_token_refresh_error_on_network_error(
         pytest.raises(TokenRefreshError),
     ):
         await service.ensure_fresh_token(db, user_id=1)
+
+
+@pytest.mark.asyncio
+async def test_ensure_fresh_token_raises_on_malformed_response_body(mock_settings, mock_crypto):
+    from backend.auth.exceptions import TokenRefreshError
+
+    creds = _make_creds(expires_in_seconds=60)
+    db = _make_creds_db(creds)
+    mock_crypto.decrypt.side_effect = lambda s: s.removeprefix("enc_")
+
+    service = StravaOAuthService(AsyncMock(), mock_crypto)
+
+    with (
+        _patch_httpx_refresh(status_code=200, response_json={}),
+        pytest.raises(TokenRefreshError, match="missing expected fields"),
+    ):
+        await service.ensure_fresh_token(db, user_id=1)

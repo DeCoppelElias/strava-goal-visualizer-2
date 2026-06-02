@@ -1,6 +1,6 @@
 import logging
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 from urllib.parse import urlencode
 
 import httpx
@@ -177,9 +177,12 @@ class StravaOAuthService:
         except httpx.RequestError as exc:
             raise TokenRefreshError(f"Network error during Strava token refresh: {exc}") from exc
 
-        creds.access_token_encrypted = self.crypto.encrypt(token_data["access_token"])
-        creds.refresh_token_encrypted = self.crypto.encrypt(token_data["refresh_token"])
-        creds.token_expires_at = datetime.fromtimestamp(token_data["expires_at"], tz=UTC)
+        try:
+            creds.access_token_encrypted = self.crypto.encrypt(token_data["access_token"])
+            creds.refresh_token_encrypted = self.crypto.encrypt(token_data["refresh_token"])
+            creds.token_expires_at = datetime.fromtimestamp(token_data["expires_at"], tz=UTC)
+        except KeyError as exc:
+            raise TokenRefreshError("Strava token response missing expected fields") from exc
         await db.commit()
 
-        return token_data["access_token"]  # type: ignore[no-any-return]
+        return cast(str, token_data["access_token"])
