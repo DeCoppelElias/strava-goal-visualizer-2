@@ -183,6 +183,5 @@ class StravaOAuthService:
             creds.token_expires_at = datetime.fromtimestamp(token_data["expires_at"], tz=UTC)
         except KeyError as exc:
             raise TokenRefreshError("Strava token response missing expected fields") from exc
-        await db.commit()
 
         return cast(str, token_data["access_token"])

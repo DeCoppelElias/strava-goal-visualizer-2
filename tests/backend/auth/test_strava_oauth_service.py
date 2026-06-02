@@ -288,7 +288,7 @@ async def test_ensure_fresh_token_calls_strava_and_updates_db_when_expired(
     assert token == "new_access"
     assert creds.access_token_encrypted == "enc_new_access"
     assert creds.refresh_token_encrypted == "enc_new_refresh"
-    db.commit.assert_called_once()
+    db.commit.assert_not_called()
 
 
 @pytest.mark.asyncio
