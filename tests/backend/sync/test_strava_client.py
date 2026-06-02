@@ -1,7 +1,7 @@
 import httpx
 import pytest
 from backend.sync.exceptions import StravaAPIError, StravaUnauthorizedError
-from backend.sync.strava_client import STRAVA_ACTIVITIES_URL, fetch_activities
+from backend.sync.strava_client import STRAVA_ACTIVITIES_URL, fetch_activities, fetch_all_activities
 
 SAMPLE_ACTIVITIES = [{"id": 1, "name": "Morning Run"}, {"id": 2, "name": "Evening Run"}]
 
@@ -63,3 +63,40 @@ async def test_fetch_activities_raises_api_error_on_network_error(respx_mock):
     respx_mock.get(STRAVA_ACTIVITIES_URL).mock(side_effect=httpx.ConnectError("connection refused"))
     with pytest.raises(StravaAPIError):
         await fetch_activities("my-token")
+
+
+async def test_fetch_all_activities_combines_multiple_pages(respx_mock):
+    page1 = [{"id": i} for i in range(200)]
+    page2 = [{"id": i} for i in range(200, 400)]
+    responses = iter(
+        [
+            httpx.Response(200, json=page1),
+            httpx.Response(200, json=page2),
+            httpx.Response(200, json=[]),
+        ]
+    )
+    respx_mock.get(STRAVA_ACTIVITIES_URL).mock(side_effect=lambda _req: next(responses))
+    result = await fetch_all_activities("my-token")
+    assert result == page1 + page2
+    assert len(respx_mock.calls) == 3
+
+
+async def test_fetch_all_activities_returns_empty_on_no_activities(respx_mock):
+    respx_mock.get(STRAVA_ACTIVITIES_URL).mock(return_value=httpx.Response(200, json=[]))
+    result = await fetch_all_activities("my-token")
+    assert result == []
+    assert len(respx_mock.calls) == 1
+
+
+async def test_fetch_all_activities_stops_after_single_full_page_followed_by_empty(respx_mock):
+    full_page = [{"id": i} for i in range(200)]
+    responses = iter(
+        [
+            httpx.Response(200, json=full_page),
+            httpx.Response(200, json=[]),
+        ]
+    )
+    respx_mock.get(STRAVA_ACTIVITIES_URL).mock(side_effect=lambda _req: next(responses))
+    result = await fetch_all_activities("my-token")
+    assert result == full_page
+    assert len(respx_mock.calls) == 2

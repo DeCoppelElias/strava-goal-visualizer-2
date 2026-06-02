@@ -39,3 +39,25 @@ async def fetch_activities(
             return response.json()  # type: ignore[no-any-return]
     except httpx.RequestError as exc:
         raise StravaAPIError(f"Network error fetching Strava activities: {exc}") from exc
+
+
+async def fetch_all_activities(
+    access_token: str,
+    *,
+    after: int | None = None,
+) -> list[dict[str, Any]]:
+    all_activities: list[dict[str, Any]] = []
+    page = 1
+    per_page = 200
+    while True:
+        page_results = await fetch_activities(
+            access_token,
+            after=after,
+            page=page,
+            per_page=per_page,
+        )
+        all_activities.extend(page_results)
+        if len(page_results) < per_page:
+            break
+        page += 1
+    return all_activities
