@@ -1,6 +1,2 @@
-class StravaUnauthorizedError(Exception):
-    pass
-
-
-class StravaAPIError(Exception):
-    pass
+from backend.shared.exceptions import StravaAPIError as StravaAPIError
+from backend.shared.exceptions import StravaUnauthorizedError as StravaUnauthorizedError

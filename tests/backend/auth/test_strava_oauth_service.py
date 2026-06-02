@@ -7,6 +7,14 @@ import pytest
 from backend.auth.exceptions import InsufficientScopeError, OAuthStateError, StravaAPIError
 from backend.auth.strava_oauth_service import SCOPES, STRAVA_AUTH_URL, StravaOAuthService
 
+
+def test_strava_api_error_is_same_class_in_auth_and_sync():
+    from backend.auth.exceptions import StravaAPIError as AuthErr
+    from backend.sync.exceptions import StravaAPIError as SyncErr
+
+    assert AuthErr is SyncErr
+
+
 _VALID_STRAVA_TOKEN_RESPONSE = {
     "access_token": "access_abc",
     "refresh_token": "refresh_xyz",
