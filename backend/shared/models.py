@@ -34,7 +34,7 @@ class OAuthCredentials(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True)
     access_token_encrypted: Mapped[str] = mapped_column(Text)
     refresh_token_encrypted: Mapped[str] = mapped_column(Text)
-    token_expires_at: Mapped[datetime] = mapped_column()
+    token_expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     scope: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
     updated_at: Mapped[datetime] = mapped_column(
@@ -49,7 +49,7 @@ class OAuthStateToken(Base):
 
     token: Mapped[str] = mapped_column(Text, primary_key=True)
     created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
-    expires_at: Mapped[datetime] = mapped_column()
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
 class Activity(Base):
