@@ -156,23 +156,26 @@ class StravaOAuthService:
 
         refresh_token = self.crypto.decrypt(creds.refresh_token_encrypted)
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                STRAVA_TOKEN_URL,
-                data={
-                    "client_id": settings.strava_client_id,
-                    "client_secret": settings.strava_client_secret,
-                    "grant_type": "refresh_token",
-                    "refresh_token": refresh_token,
-                },
-            )
-            if response.status_code == 401:
-                raise TokenRefreshError("Strava refresh rejected — credentials revoked")
-            try:
-                response.raise_for_status()
-            except httpx.HTTPStatusError as exc:
-                raise TokenRefreshError(f"Strava refresh failed: {exc}") from exc
-            token_data: dict[str, Any] = response.json()
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    STRAVA_TOKEN_URL,
+                    data={
+                        "client_id": settings.strava_client_id,
+                        "client_secret": settings.strava_client_secret,
+                        "grant_type": "refresh_token",
+                        "refresh_token": refresh_token,
+                    },
+                )
+                if response.status_code == 401:
+                    raise TokenRefreshError("Strava refresh rejected — credentials revoked")
+                try:
+                    response.raise_for_status()
+                except httpx.HTTPStatusError as exc:
+                    raise TokenRefreshError(f"Strava refresh failed: {exc}") from exc
+                token_data: dict[str, Any] = response.json()
+        except httpx.RequestError as exc:
+            raise TokenRefreshError(f"Network error during Strava token refresh: {exc}") from exc
 
         creds.access_token_encrypted = self.crypto.encrypt(token_data["access_token"])
         creds.refresh_token_encrypted = self.crypto.encrypt(token_data["refresh_token"])

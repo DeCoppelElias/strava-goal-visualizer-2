@@ -23,16 +23,19 @@ async def fetch_activities(
 
     logger.info("Fetching Strava activities page=%d", page)
 
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            STRAVA_ACTIVITIES_URL,
-            headers={"Authorization": f"Bearer {access_token}"},
-            params=params,
-        )
-        if response.status_code == 401:
-            raise StravaUnauthorizedError("Strava returned 401 — token invalid or expired")
-        try:
-            response.raise_for_status()
-        except httpx.HTTPStatusError as exc:
-            raise StravaAPIError(f"Strava API error: {exc}") from exc
-        return response.json()  # type: ignore[no-any-return]
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                STRAVA_ACTIVITIES_URL,
+                headers={"Authorization": f"Bearer {access_token}"},
+                params=params,
+            )
+            if response.status_code == 401:
+                raise StravaUnauthorizedError("Strava returned 401 — token invalid or expired")
+            try:
+                response.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                raise StravaAPIError(f"Strava API error: {exc}") from exc
+            return response.json()  # type: ignore[no-any-return]
+    except httpx.RequestError as exc:
+        raise StravaAPIError(f"Network error fetching Strava activities: {exc}") from exc

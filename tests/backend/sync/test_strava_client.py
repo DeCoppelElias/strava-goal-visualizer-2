@@ -57,3 +57,9 @@ def test_strava_unauthorized_error_is_same_class_as_shared():
     from backend.sync.exceptions import StravaUnauthorizedError as SyncErr
 
     assert SyncErr is SharedErr
+
+
+async def test_fetch_activities_raises_api_error_on_network_error(respx_mock):
+    respx_mock.get(STRAVA_ACTIVITIES_URL).mock(side_effect=httpx.ConnectError("connection refused"))
+    with pytest.raises(StravaAPIError):
+        await fetch_activities("my-token")

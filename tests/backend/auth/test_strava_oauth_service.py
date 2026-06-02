@@ -328,3 +328,28 @@ async def test_ensure_fresh_token_raises_on_strava_server_error(mock_settings, m
 
     with _patch_httpx_refresh(status_code=500), pytest.raises(TokenRefreshError):
         await service.ensure_fresh_token(db, user_id=1)
+
+
+@pytest.mark.asyncio
+async def test_ensure_fresh_token_raises_token_refresh_error_on_network_error(
+    mock_settings, mock_crypto
+):
+    from backend.auth.exceptions import TokenRefreshError
+
+    creds = _make_creds(expires_in_seconds=60)
+    db = _make_creds_db(creds)
+    mock_crypto.decrypt.side_effect = lambda s: s.removeprefix("enc_")
+
+    mock_cls = MagicMock()
+    mock_cls.return_value.__aenter__ = AsyncMock(
+        side_effect=httpx.ConnectError("connection refused")
+    )
+    mock_cls.return_value.__aexit__ = AsyncMock(return_value=False)
+
+    service = StravaOAuthService(AsyncMock(), mock_crypto)
+
+    with (
+        patch("backend.auth.strava_oauth_service.httpx.AsyncClient", mock_cls),
+        pytest.raises(TokenRefreshError),
+    ):
+        await service.ensure_fresh_token(db, user_id=1)
