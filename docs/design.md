@@ -89,11 +89,13 @@ All database access uses the SQLAlchemy async ORM. The following conventions app
 
 **Reads:** Use `db.execute(select(Model).where(...))` with `.scalar_one_or_none()` for a single row or `.scalars().all()` for multiple rows.
 
-**Inserts:** Use `db.add(ModelInstance)` to register the object with the session, then `await db.commit()`. Use `await db.flush()` instead of commit when a subsequent query within the same transaction needs the generated primary key.
+**Inserts:** Use `db.add(ModelInstance)` to register the object with the session. Use `await db.flush()` when a subsequent query within the same transaction needs the generated primary key. The session commits automatically at request completion.
 
-**Deletes:** Fetch the ORM object first, then `await db.delete(obj)` followed by `await db.commit()`.
+**Deletes:** Fetch the ORM object first, then `await db.delete(obj)`. The session commits automatically at request completion.
 
 **Raw SQL (`text()`):** Permitted only for operations that have no ORM equivalent — for example, complex aggregates or window functions. Never use `text()` for basic CRUD on a table that has an ORM model defined in `shared/models.py`.
+
+**Transaction ownership:** No application code calls `db.commit()` explicitly. Transactions are managed by `get_db` via `session.begin()`, which auto-commits on successful request completion and auto-rolls back on any exception. Service methods only mutate ORM objects; the transaction boundary is the HTTP request.
 
 ---
 

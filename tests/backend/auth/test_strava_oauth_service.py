@@ -187,7 +187,7 @@ async def test_process_callback_creates_new_user_on_first_login(mock_settings, m
 
     assert user.strava_athlete_id == _VALID_STRAVA_TOKEN_RESPONSE["athlete"]["id"]
     db.add.assert_called()
-    db.commit.assert_called_once()
+    db.commit.assert_not_called()
 
 
 @pytest.mark.asyncio

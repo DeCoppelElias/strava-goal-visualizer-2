@@ -122,10 +122,10 @@ async def test_revoke_tokens_calls_strava_and_deletes_credentials():
     mock_http.post.assert_called_once()
     call_kwargs = mock_http.post.call_args
     assert "deauthorize" in call_kwargs[0][0]
-    assert call_kwargs[1]["data"]["access_token"] == "decrypted_token"  # noqa: S105
+    assert call_kwargs[1]["data"]["access_token"] == "decrypted_token"
 
     db.delete.assert_called_once_with(creds)
-    db.commit.assert_called_once()
+    db.commit.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -158,7 +158,7 @@ async def test_revoke_tokens_deletes_credentials_even_if_strava_call_fails():
         await service.revoke_tokens(db, user_id=1)
 
     db.delete.assert_called_once_with(creds)
-    db.commit.assert_called_once()
+    db.commit.assert_not_called()
 
 
 # ---------------------------------------------------------------------------

@@ -56,7 +56,6 @@ class StravaOAuthService:
         athlete_id: int = token_data["athlete"]["id"]
         user = await self._upsert_user(db, athlete_id)
         await self._upsert_credentials(db, user, token_data)
-        await db.commit()
 
         return user
 
@@ -140,7 +139,6 @@ class StravaOAuthService:
             logger.warning("Strava deauthorize call failed — proceeding with local token deletion")
 
         await db.delete(creds)
-        await db.commit()
 
     async def ensure_fresh_token(self, db: AsyncSession, user_id: int) -> str:
         result = await db.execute(

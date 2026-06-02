@@ -36,7 +36,7 @@ async def test_create_state_token_stores_token_and_expiration():
     expected_max = after + timedelta(minutes=TOKEN_TTL_MINUTES)
     assert expected_min <= added.expires_at <= expected_max
 
-    db.commit.assert_called_once()
+    db.commit.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -50,7 +50,7 @@ async def test_validate_valid_token_returns_true_and_deletes_token():
 
     assert result is True
     db.delete.assert_called_once_with(token_obj)
-    db.commit.assert_called_once()
+    db.commit.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -76,7 +76,7 @@ async def test_validate_expired_token_returns_false_and_deletes_token():
 
     assert result is False
     db.delete.assert_called_once_with(token_obj)
-    db.commit.assert_called_once()
+    db.commit.assert_not_called()
 
 
 @pytest.mark.asyncio

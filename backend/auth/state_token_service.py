@@ -17,7 +17,6 @@ class StateTokenService:
         token = secrets.token_urlsafe(32)
         expires_at = datetime.now(UTC) + timedelta(minutes=self.ttl_minutes)
         db.add(OAuthStateToken(token=token, expires_at=expires_at))
-        await db.commit()
         return token
 
     async def validate_and_consume_state_token(
@@ -32,6 +31,5 @@ class StateTokenService:
             return False
 
         await db.delete(token_obj)
-        await db.commit()
 
         return token_obj.expires_at >= datetime.now(UTC)
