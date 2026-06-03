@@ -38,6 +38,7 @@ class Settings:
     strava_client_secret: str
     strava_redirect_uri: str
     session_secret_key: str
+    sync_cooldown_seconds: int = 600
 
 
 settings = Settings(
@@ -48,4 +49,5 @@ settings = Settings(
     strava_client_secret=os.environ["STRAVA_CLIENT_SECRET"],
     strava_redirect_uri=os.environ["STRAVA_REDIRECT_URI"],
     session_secret_key=os.environ["SESSION_SECRET_KEY"],
+    sync_cooldown_seconds=int(os.environ.get("SYNC_COOLDOWN_SECONDS", "600")),
 )

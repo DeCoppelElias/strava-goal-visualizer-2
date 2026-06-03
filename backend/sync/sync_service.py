@@ -6,12 +6,13 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.auth.strava_oauth_service import StravaOAuthService
+from backend.shared.config import settings
 from backend.shared.models import Activity, SyncState
 from backend.sync.exceptions import SyncCooldownError
 from backend.sync.schemas import SyncResponse
 from backend.sync.strava_client import fetch_all_activities
 
-COOLDOWN_SECONDS = 600
+COOLDOWN_SECONDS = settings.sync_cooldown_seconds
 
 
 def _jan1_unix_timestamp() -> int:
