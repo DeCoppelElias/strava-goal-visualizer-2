@@ -18,6 +18,7 @@ from backend.auth.router import router as auth_router
 from backend.shared.config import settings
 from backend.shared.db import engine
 from backend.shared.rate_limit import limiter
+from backend.sync.router import router as sync_router
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -68,6 +69,7 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.include_router(auth_router)
+app.include_router(sync_router)
 
 
 # ---------------------------------------------------------------------------
