@@ -995,17 +995,17 @@ _Generated: May 2, 2026_
 
 #### TASK-5.4
 
-**Name:** Streamlit personal goal dashboard page
+**Name:** Personal goal dashboard page
 
-**Goal:** Render goal progress chart, key stats, and goal edit control in Streamlit.
+**Goal:** Extend the existing DashboardPage with goal progress chart, key stats, and goal edit control.
 
-**Context:** Core product UI. First moment the app looks like an actual product.
+**Context:** Core product UI. First moment the app looks like an actual product. `DashboardPage.tsx` already exists from TASK-3.5 (sync button + result); this task adds the goal content below it.
 
-**Input:** `GET /dashboard/personal`. `PUT /goals`. Sync status from TASK-3.5.
+**Input:** `GET /dashboard/personal`. `PUT /goals`. Sync button already in `DashboardPage.tsx` from TASK-3.5.
 
 **Output:**
 - `frontend/src/api/client.ts` extended with `getPersonalDashboard()` and `putGoal(km: number)`
-- `frontend/src/pages/DashboardPage.tsx` — progress bar (distance to date vs goal); pace line chart using Recharts (cumulative distance over year vs linear goal pace); key stats (total km, % complete, on-pace indicator); goal edit: number input + save button; last sync timestamp; empty state: "No running activities found — sync your data to get started"; GDPR links visible
+- `frontend/src/pages/DashboardPage.tsx` extended with: progress bar (distance to date vs goal); pace line chart using Recharts (cumulative distance over year vs linear goal pace); key stats (total km, % complete, on-pace indicator); goal edit: number input + save button; last sync timestamp; empty state: "No running activities found — sync your data to get started"; GDPR links visible
 
 **Dependencies:** TASK-5.3, TASK-3.5
 
