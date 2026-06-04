@@ -45,13 +45,15 @@ class StravaOAuthService:
 
         return f"{STRAVA_AUTH_URL}?{urlencode(params)}"
 
-    async def process_callback(self, db: AsyncSession, code: str, state: str) -> User:
+    async def process_callback(
+        self, db: AsyncSession, code: str, state: str, scope: str = ""
+    ) -> User:
         valid = await self.state_token_service.validate_and_consume_state_token(db, state)
         if not valid:
             raise OAuthStateError("Invalid or expired OAuth state token")
 
+        self._validate_scopes(scope)
         token_data = await self._exchange_code_for_tokens(code)
-        self._validate_scopes(token_data["scope"])
 
         athlete_id: int = token_data["athlete"]["id"]
         user = await self._upsert_user(db, athlete_id)
@@ -182,4 +184,4 @@ class StravaOAuthService:
         except KeyError as exc:
             raise TokenRefreshError("Strava token response missing expected fields") from exc
 
-        return cast(str, token_data["access_token"])
+        return cast("str", token_data["access_token"])

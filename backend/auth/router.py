@@ -42,6 +42,7 @@ async def oauth_callback(
     code: str = "",
     state: str = "",
     error: str = "",
+    scope: str = "",
     db: AsyncSession = Depends(get_db),  # noqa: B008
     strava_oauth_service: StravaOAuthService = Depends(get_strava_oauth_service),  # noqa: B008
 ) -> RedirectResponse:
@@ -52,7 +53,7 @@ async def oauth_callback(
         return RedirectResponse(url=f"{frontend}?error=strava_error")
 
     try:
-        user = await strava_oauth_service.process_callback(db, code=code, state=state)
+        user = await strava_oauth_service.process_callback(db, code=code, state=state, scope=scope)
     except OAuthStateError:
         logger.warning("OAuth state validation failed — potential CSRF attempt")
         return RedirectResponse(url=f"{frontend}?error=auth_failed")

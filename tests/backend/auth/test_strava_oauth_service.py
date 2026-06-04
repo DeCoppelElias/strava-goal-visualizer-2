@@ -138,6 +138,9 @@ async def test_create_authorization_url_passes_db_to_token_service(mock_settings
 # ---------------------------------------------------------------------------
 
 
+_FULL_SCOPE = "read,activity:read_all,profile:read_all"
+
+
 @pytest.mark.asyncio
 async def test_process_callback_raises_on_invalid_state(mock_settings, mock_crypto):
     state_token_service = AsyncMock()
@@ -146,7 +149,9 @@ async def test_process_callback_raises_on_invalid_state(mock_settings, mock_cryp
     service = StravaOAuthService(state_token_service, mock_crypto)
 
     with pytest.raises(OAuthStateError):
-        await service.process_callback(_make_db(), code="code", state="bad_state")
+        await service.process_callback(
+            _make_db(), code="code", state="bad_state", scope=_FULL_SCOPE
+        )
 
 
 @pytest.mark.asyncio
@@ -158,7 +163,9 @@ async def test_process_callback_raises_on_strava_http_error(mock_settings, mock_
 
     http_error = httpx.HTTPStatusError("error", request=MagicMock(), response=MagicMock())
     with _patch_httpx(raise_for_status=http_error), pytest.raises(StravaAPIError):
-        await service.process_callback(_make_db(), code="code", state="valid_state")
+        await service.process_callback(
+            _make_db(), code="code", state="valid_state", scope=_FULL_SCOPE
+        )
 
 
 @pytest.mark.asyncio
@@ -166,12 +173,12 @@ async def test_process_callback_raises_on_insufficient_scope(mock_settings, mock
     state_token_service = AsyncMock()
     state_token_service.validate_and_consume_state_token.return_value = True
 
-    partial_scope_response = {**_VALID_STRAVA_TOKEN_RESPONSE, "scope": "profile:read_all"}
-
     service = StravaOAuthService(state_token_service, mock_crypto)
 
-    with _patch_httpx(response_json=partial_scope_response), pytest.raises(InsufficientScopeError):
-        await service.process_callback(_make_db(), code="code", state="valid_state")
+    with pytest.raises(InsufficientScopeError):
+        await service.process_callback(
+            _make_db(), code="code", state="valid_state", scope="profile:read_all"
+        )
 
 
 @pytest.mark.asyncio
@@ -183,7 +190,9 @@ async def test_process_callback_creates_new_user_on_first_login(mock_settings, m
     service = StravaOAuthService(state_token_service, mock_crypto)
 
     with _patch_httpx(response_json=_VALID_STRAVA_TOKEN_RESPONSE):
-        user = await service.process_callback(db, code="code", state="valid_state")
+        user = await service.process_callback(
+            db, code="code", state="valid_state", scope=_FULL_SCOPE
+        )
 
     assert user.strava_athlete_id == _VALID_STRAVA_TOKEN_RESPONSE["athlete"]["id"]
     db.add.assert_called()
@@ -199,7 +208,7 @@ async def test_process_callback_stores_encrypted_tokens(mock_settings, mock_cryp
     service = StravaOAuthService(state_token_service, mock_crypto)
 
     with _patch_httpx(response_json=_VALID_STRAVA_TOKEN_RESPONSE):
-        await service.process_callback(db, code="code", state="valid_state")
+        await service.process_callback(db, code="code", state="valid_state", scope=_FULL_SCOPE)
 
     mock_crypto.encrypt.assert_any_call("access_abc")
     mock_crypto.encrypt.assert_any_call("refresh_xyz")
