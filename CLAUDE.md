@@ -137,6 +137,104 @@ async def oauth_authorize(...) -> AuthorizeResponse:
 
 ---
 
+## Commands
+
+All Python commands use `uv run`; frontend commands use `npm` from `frontend/`.
+
+### Setup
+
+```bash
+# 1. Copy env template and fill in required values (Strava keys, secrets)
+cp .env.example .env
+
+# 2. Install all dependencies (backend + frontend + dev tooling)
+make install-dev
+
+# 3. Generate secret keys (run once, paste into .env)
+python -c "import secrets; print(secrets.token_hex(32))"                         # SESSION_SECRET_KEY
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"  # TOKEN_ENCRYPTION_KEY
+```
+
+### Database
+
+```bash
+# Start Postgres only (detached)
+docker compose up db -d
+
+# Run all pending migrations
+uv run alembic upgrade head
+
+# Create a new migration after changing models
+uv run alembic revision --autogenerate -m "describe change"
+
+# Downgrade one step
+uv run alembic downgrade -1
+```
+
+### Backend (local, hot-reload)
+
+```bash
+# Requires Postgres running and .env present
+uv run uvicorn backend.main:app --reload --port 8000
+
+# API docs available at:
+# http://localhost:8000/docs   (Swagger UI)
+# http://localhost:8000/redoc  (ReDoc)
+# http://localhost:8000/health (health check)
+```
+
+### Frontend (local, hot-reload)
+
+```bash
+cd frontend
+npm run dev       # starts Vite dev server at http://localhost:5173
+npm run build     # production build (outputs to frontend/dist)
+npm run preview   # serve the production build locally
+```
+
+### Full Stack (Docker Compose)
+
+```bash
+# Build and start all services (db, backend, frontend)
+docker compose up --build
+
+# Start in background
+docker compose up --build -d
+
+# Tail logs
+docker compose logs -f
+
+# Stop everything
+docker compose down
+
+# Stop and wipe the database volume
+docker compose down -v
+```
+
+### Tests
+
+```bash
+make test                          # full suite with coverage
+uv run pytest tests/               # same
+uv run pytest tests/backend/auth/  # run a specific directory
+uv run pytest -k "test_sync"       # filter by name
+uv run pytest -x                   # stop on first failure
+uv run pytest -v                   # verbose output
+```
+
+### Code Quality
+
+```bash
+make lint          # ruff linter
+make format        # ruff formatter (writes changes)
+make format-check  # formatter check only (no writes, used in CI)
+make typecheck     # mypy strict type checking
+make ci            # full CI suite: pre-commit + lint + format-check + typecheck
+make pre-commit-run  # run all pre-commit hooks against all files
+```
+
+---
+
 ## Where to Find Things
 
 - **Backlog + task status:** `docs/epics/backlog.md`
