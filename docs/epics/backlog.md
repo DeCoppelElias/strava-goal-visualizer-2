@@ -881,23 +881,24 @@ _Generated: May 2, 2026_
 
 #### TASK-3.5
 
-**Name:** Streamlit sync trigger and raw activity list
+**Name:** React sync trigger page
 
-**Goal:** Streamlit page allows the authenticated user to trigger a sync and see a raw table of their activities.
+**Goal:** React page allows the authenticated user to trigger a sync and see a confirmation of how many runs were synced.
 
-**Context:** First moment the full vertical slice (Strava → backend → frontend) is visible to a user. Proves the entire pipeline works.
+**Context:** First moment the full vertical slice (Strava → backend → frontend) is visible to a user. Proves the entire pipeline works. Raw activity list is intentionally excluded — the dashboard (TASK-5.4) is where data is visualized.
 
 **Input:** Sync endpoints from TASK-3.4. Auth state from TASK-2.8.
 
 **Output:**
 - `frontend/src/api/client.ts` extended with `postSync()` returning `{ synced_activities: number, last_sync_completed_at: string }`
-- `frontend/src/pages/SyncPage.tsx` — "Sync Activities" button calls `POST /sync`; raw running activity table (name, date, distance, moving time); last sync timestamp shown prominently; cooldown error shown on 429 ("Sync unavailable — try again in X minutes")
+- `frontend/src/pages/SyncPage.tsx` — "Sync Activities" button calls `POST /sync`; shows synced run count ("N runs synced") and last sync timestamp on success; cooldown error shown on 429 ("Sync unavailable — try again in X minutes")
+- Authenticated app shell with navigation (`frontend/src/pages/HomePage.tsx` updated) to host current and future pages
 
 **Dependencies:** TASK-3.4, TASK-2.8
 
 **Complexity:** Small
 
-**Testability:** Click "Sync Activities" → table populates with real Strava activities → last sync timestamp updates. Correct data matches Strava app. Clicking sync again within 10 minutes shows cooldown message.
+**Testability:** Click "Sync Activities" → count and last sync timestamp appear. Clicking sync again within 10 minutes shows cooldown message with remaining time.
 
 ---
 
