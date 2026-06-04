@@ -1,6 +1,6 @@
 export default function GdprFooter() {
   return (
-    <footer style={{ marginTop: '2rem', fontSize: '0.8rem' }}>
+    <footer className="gdpr-footer">
       <a href="#">Privacy Policy</a>
       {' · '}
       <a href="#">Terms of Service</a>

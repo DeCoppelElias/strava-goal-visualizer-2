@@ -39,7 +39,7 @@ export default function App() {
       .catch(() => setAuthState('unauthenticated'))
   }, [])
 
-  if (authState === 'loading') return <p>Loading…</p>
+  if (authState === 'loading') return <div className="app-loading">Loading…</div>
 
   if (authState === 'authenticated' && user) {
     return (

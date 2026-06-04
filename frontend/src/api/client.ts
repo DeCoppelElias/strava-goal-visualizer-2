@@ -33,3 +33,25 @@ export async function postOAuthAuthorize(): Promise<string> {
 export async function postSessionLogout(): Promise<void> {
   await apiFetch('/session/logout', { method: 'POST' })
 }
+
+export interface SyncResponse {
+  synced_activities: number
+  last_sync_completed_at: string
+}
+
+export class SyncCooldownError extends Error {
+  constructor(public readonly retryAfterSeconds: number) {
+    super(`Sync on cooldown. Retry after ${retryAfterSeconds}s`)
+    this.name = 'SyncCooldownError'
+  }
+}
+
+export async function postSync(): Promise<SyncResponse> {
+  const res = await apiFetch('/sync', { method: 'POST' })
+  if (res.status === 429) {
+    const retryAfter = res.headers.get('Retry-After')
+    throw new SyncCooldownError(retryAfter ? parseInt(retryAfter, 10) : 600)
+  }
+  if (!res.ok) throw new Error(`/sync returned ${res.status}`)
+  return res.json() as Promise<SyncResponse>
+}

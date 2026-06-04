@@ -23,17 +23,22 @@ export default function LoginPage({ oauthError }: Props) {
   }
 
   return (
-    <div>
-      <h1>Strava Goal Visualizer</h1>
-      {oauthError === 'auth_failed' && (
-        <p role="alert" style={{ color: 'red' }}>Authentication failed — please try again.</p>
+    <div className="login-page">
+      <h1 className="login-brand">
+        Strava<br />
+        <span>Goal</span><br />
+        Visualizer
+      </h1>
+      <p className="login-sub">Track your yearly running goal.</p>
+      {(oauthError === 'auth_failed' || oauthError === 'strava_error') && (
+        <p className="login-error" role="alert">
+          {oauthError === 'auth_failed'
+            ? 'Authentication failed — please try again.'
+            : 'Strava returned an error — please try again.'}
+        </p>
       )}
-      {oauthError === 'strava_error' && (
-        <p role="alert" style={{ color: 'red' }}>Strava returned an error — please try again.</p>
-      )}
-      {apiError && <p role="alert" style={{ color: 'red' }}>{apiError}</p>}
-      <p>Connect your Strava account to visualize your yearly running goal.</p>
-      <button onClick={handleConnect} disabled={loading}>
+      {apiError && <p className="login-error" role="alert">{apiError}</p>}
+      <button className="login-btn" onClick={handleConnect} disabled={loading}>
         {loading ? 'Redirecting…' : 'Connect with Strava'}
       </button>
       <GdprFooter />
