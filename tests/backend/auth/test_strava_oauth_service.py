@@ -200,6 +200,48 @@ async def test_process_callback_creates_new_user_on_first_login(mock_settings, m
 
 
 @pytest.mark.asyncio
+async def test_upsert_user_creates_default_goal_for_new_user(mock_settings, mock_crypto):
+    from decimal import Decimal
+
+    from backend.shared.models import Goal
+
+    db = AsyncMock()
+    db.add = MagicMock()
+
+    user_result = MagicMock()
+    user_result.scalar_one_or_none.return_value = None  # new user
+    db.execute.return_value = user_result
+
+    service = StravaOAuthService(AsyncMock(), mock_crypto)
+    await service._upsert_user(db, strava_athlete_id=42)
+
+    goal_calls = [c for c in db.add.call_args_list if isinstance(c.args[0], Goal)]
+    assert len(goal_calls) == 1
+    assert goal_calls[0].args[0].yearly_running_goal_km == Decimal("365")
+
+
+@pytest.mark.asyncio
+async def test_upsert_user_does_not_create_goal_for_existing_user(mock_settings, mock_crypto):
+    from backend.shared.models import Goal, User
+
+    existing_user = MagicMock(spec=User)
+    existing_user.id = 5
+
+    db = AsyncMock()
+    db.add = MagicMock()
+
+    user_result = MagicMock()
+    user_result.scalar_one_or_none.return_value = existing_user
+    db.execute.return_value = user_result
+
+    service = StravaOAuthService(AsyncMock(), mock_crypto)
+    await service._upsert_user(db, strava_athlete_id=42)
+
+    goal_calls = [c for c in db.add.call_args_list if isinstance(c.args[0], Goal)]
+    assert len(goal_calls) == 0
+
+
+@pytest.mark.asyncio
 async def test_process_callback_stores_encrypted_tokens(mock_settings, mock_crypto):
     state_token_service = AsyncMock()
     state_token_service.validate_and_consume_state_token.return_value = True

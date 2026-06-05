@@ -1,5 +1,6 @@
 import logging
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from typing import Any, cast
 from urllib.parse import urlencode
 
@@ -16,7 +17,7 @@ from backend.auth.exceptions import (
 from backend.auth.state_token_service import StateTokenService
 from backend.shared.config import settings
 from backend.shared.crypto import Crypto
-from backend.shared.models import OAuthCredentials, User
+from backend.shared.models import Goal, OAuthCredentials, User
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +94,7 @@ class StravaOAuthService:
             user = User(strava_athlete_id=strava_athlete_id)
             db.add(user)
             await db.flush()
+            db.add(Goal(user_id=user.id, yearly_running_goal_km=Decimal("365")))
 
         return user
 
