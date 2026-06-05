@@ -18,7 +18,8 @@ Every task follows this exact sequence (see `docs/workflow.md` for authoritative
 ### 1. PLAN MODE
 - **Skill:** invoke `brainstorming` before planning any new feature or non-trivial change
 - Read only the relevant task from `docs/epics/backlog.md` (not the whole file)
-- Consult `docs/design.md` only when architecture decisions are needed
+- Consult `docs/design.md` when architecture decisions are needed
+- Consult `docs/design/style.md` when front-end design desicions are made
 - Identify scope, gaps, and questions
 - **Skill:** invoke `writing-plans` to produce the structured implementation plan
 - **STOP if any uncertainty exists — ask before proceeding**
@@ -240,4 +241,5 @@ make pre-commit-run  # run all pre-commit hooks against all files
 - **Backlog + task status:** `docs/epics/backlog.md`
 - **Design decisions:** `docs/design.md`
 - **Workflow rules:** `docs/workflow.md`
+- **Front-end style** `docs/design/style.md`
 - **Env var schema:** `.env.example`
