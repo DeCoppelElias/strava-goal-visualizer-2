@@ -23,24 +23,27 @@ export default function LoginPage({ oauthError }: Props) {
   }
 
   return (
-    <div className="login-page">
-      <h1 className="login-brand">
-        Strava<br />
-        <span>Goal</span><br />
-        Visualizer
-      </h1>
-      <p className="login-sub">Track your yearly running goal.</p>
-      {(oauthError === 'auth_failed' || oauthError === 'strava_error') && (
-        <p className="login-error" role="alert">
-          {oauthError === 'auth_failed'
-            ? 'Authentication failed — please try again.'
-            : 'Strava returned an error — please try again.'}
-        </p>
-      )}
-      {apiError && <p className="login-error" role="alert">{apiError}</p>}
-      <button className="login-btn" onClick={handleConnect} disabled={loading}>
-        {loading ? 'Redirecting…' : 'Connect with Strava'}
-      </button>
+    <div className="login-root">
+      <div className="login-center">
+        <div className="login-mark" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="13,1 25,13 13,25 1,13" fill="var(--accent)" />
+          </svg>
+        </div>
+        <h1 className="login-title">Strava Goal Visualizer</h1>
+        <p className="login-subtitle">Track your yearly running goal.</p>
+        {(oauthError === 'auth_failed' || oauthError === 'strava_error') && (
+          <p className="login-error" role="alert">
+            {oauthError === 'auth_failed'
+              ? 'Authentication failed — please try again.'
+              : 'Strava returned an error — please try again.'}
+          </p>
+        )}
+        {apiError && <p className="login-error" role="alert">{apiError}</p>}
+        <button className="btn btn--primary" onClick={handleConnect} disabled={loading}>
+          {loading ? 'Redirecting…' : 'Connect with Strava'}
+        </button>
+      </div>
       <GdprFooter />
     </div>
   )

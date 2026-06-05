@@ -45,49 +45,53 @@ export default function DashboardPage({ athleteId }: Props) {
 
   return (
     <div className="sync-page">
-      <div className="sync-hero">
-        <h1 className="sync-title">Dashboard</h1>
-        <p className="sync-athlete">Athlete #{athleteId}</p>
+      <div className="page-header">
+        <h1 className="page-title">Dashboard</h1>
+        <p className="page-subtitle">Athlete #{athleteId}</p>
       </div>
 
-      <div className="sync-action">
-        <button
-          className={`sync-btn${syncing ? ' sync-btn--loading' : ''}`}
-          onClick={handleSync}
-          disabled={syncing}
-        >
-          {syncing ? (
-            <>
-              <span className="sync-btn__spinner" aria-hidden="true" />
-              Syncing…
-            </>
-          ) : (
-            'Sync Activities'
-          )}
-        </button>
-      </div>
-
-      {syncCount !== null && lastSyncAt !== null && (
-        <div className="sync-result">
-          <p className="sync-count">
-            {syncCount} {syncCount === 1 ? 'run' : 'runs'} synced
-          </p>
-          <p className="sync-timestamp">Last synced: {formatSyncTime(lastSyncAt)}</p>
+      <div className="card">
+        <div className="card__header">
+          <span className="card__label">Sync Activities</span>
         </div>
-      )}
+        <div className="card__body">
+          <button
+            className="btn btn--primary"
+            onClick={handleSync}
+            disabled={syncing}
+          >
+            {syncing ? (
+              <>
+                <span className="sync-btn__spinner" aria-hidden="true" />
+                Syncing…
+              </>
+            ) : (
+              'Sync Activities'
+            )}
+          </button>
 
-      {error?.type === 'cooldown' && (
-        <p className="sync-cooldown-error" role="alert">
-          <span aria-hidden="true">⚠</span>
-          {' '}Sync unavailable — try again in {Math.ceil(error.retryAfterSeconds / 60)} minutes
-        </p>
-      )}
+          {syncCount !== null && lastSyncAt !== null && (
+            <div className="sync-result">
+              <p className="sync-count">
+                {syncCount} {syncCount === 1 ? 'run' : 'runs'} synced
+              </p>
+              <p className="sync-timestamp">Last synced {formatSyncTime(lastSyncAt)}</p>
+            </div>
+          )}
 
-      {error?.type === 'api' && (
-        <p className="sync-error" role="alert">
-          Sync failed — please try again.
-        </p>
-      )}
+          {error?.type === 'cooldown' && (
+            <p className="status-msg status-msg--warning" role="alert">
+              Sync unavailable — try again in {Math.ceil(error.retryAfterSeconds / 60)} min
+            </p>
+          )}
+
+          {error?.type === 'api' && (
+            <p className="status-msg status-msg--danger" role="alert">
+              Sync failed — please try again.
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
