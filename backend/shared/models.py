@@ -2,7 +2,16 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Optional
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, Numeric, Text, UniqueConstraint
+from sqlalchemy import (
+    BigInteger,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    Numeric,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 _tz = DateTime(timezone=True)
@@ -26,6 +35,7 @@ class User(Base):
     )
     activities: Mapped[list["Activity"]] = relationship(back_populates="user")
     sync_state: Mapped[Optional["SyncState"]] = relationship(back_populates="user", uselist=False)
+    goal: Mapped[Optional["Goal"]] = relationship(back_populates="user", uselist=False)
 
 
 class OAuthCredentials(Base):
@@ -79,3 +89,16 @@ class SyncState(Base):
     last_sync_completed_at: Mapped[datetime] = mapped_column(_tz)
 
     user: Mapped["User"] = relationship(back_populates="sync_state")
+
+
+class Goal(Base):
+    __tablename__ = "goals"
+    __table_args__ = (
+        CheckConstraint("yearly_running_goal_km > 0 AND yearly_running_goal_km <= 100000"),
+    )
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    yearly_running_goal_km: Mapped[Decimal] = mapped_column(Numeric, default=Decimal("365"))
+    updated_at: Mapped[datetime] = mapped_column(_tz, default=_now, onupdate=_now)
+
+    user: Mapped["User"] = relationship(back_populates="goal")
