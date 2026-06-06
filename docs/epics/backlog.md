@@ -1050,7 +1050,7 @@ _Generated: May 2, 2026_
 
 ---
 
-#### TASK-5.4.1 _(ad-hoc)_
+#### TASK-5.4.1 ✅ _(ad-hoc)_
 
 **Name:** Fix PaceChart light-mode fill and leap-year domain
 
@@ -1073,7 +1073,7 @@ _Generated: May 2, 2026_
 
 ---
 
-#### TASK-5.4.2 _(ad-hoc)_
+#### TASK-5.4.2 ✅ _(ad-hoc)_
 
 **Name:** Align dashboard CSS to style spec: section gap and page title size
 
@@ -1095,7 +1095,7 @@ _Generated: May 2, 2026_
 
 ---
 
-#### TASK-5.4.3 _(ad-hoc)_
+#### TASK-5.4.3 ✅ _(ad-hoc)_
 
 **Name:** Spinner consistency: rename class and add logout spinner
 
@@ -1118,7 +1118,7 @@ _Generated: May 2, 2026_
 
 ---
 
-#### TASK-5.4.4 _(ad-hoc)_
+#### TASK-5.4.4 ✅ _(ad-hoc)_
 
 **Name:** Replace raw athlete ID in page subtitle
 
