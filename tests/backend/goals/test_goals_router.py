@@ -174,3 +174,82 @@ def test_put_goals_returns_422_for_km_above_100000():
 
 def test_personal_dashboard_response_schema_importable():
     from backend.goals.schemas import PersonalDashboardResponse  # noqa: F401
+
+
+def test_get_personal_dashboard_returns_401_when_unauthenticated():
+    from backend.auth.dependencies import get_current_user
+    from backend.main import app
+
+    app.dependency_overrides[get_current_user] = _stub_401()
+    try:
+        with (
+            patch("backend.main._run_migrations"),
+            TestClient(app, raise_server_exceptions=False) as client,
+        ):
+            response = client.get("/dashboard/personal")
+        assert response.status_code == 401
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_get_personal_dashboard_returns_200_with_correct_shape():
+    from datetime import UTC, datetime
+
+    from backend.auth.dependencies import get_current_user
+    from backend.dependencies import get_goal_service
+    from backend.goals.schemas import PersonalDashboardResponse
+    from backend.main import app
+
+    fixed_time = datetime(2026, 6, 1, 10, 0, 0, tzinfo=UTC)
+    mock_response = PersonalDashboardResponse(
+        goal_km=365.0,
+        distance_to_date_km=142.5,
+        progress_pct=39.04,
+        on_pace=False,
+        expected_pct=43.01,
+        last_sync_completed_at=fixed_time,
+    )
+    mock_svc = MagicMock()
+    mock_svc.get_personal_dashboard = AsyncMock(return_value=mock_response)
+
+    app.dependency_overrides[get_current_user] = _stub_user(_make_user())
+    app.dependency_overrides[get_goal_service] = lambda: mock_svc
+    try:
+        with patch("backend.main._run_migrations"), TestClient(app) as client:
+            response = client.get("/dashboard/personal")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["goal_km"] == 365.0
+        assert data["distance_to_date_km"] == 142.5
+        assert data["progress_pct"] == 39.04
+        assert data["on_pace"] is False
+        assert data["expected_pct"] == 43.01
+        assert "last_sync_completed_at" in data
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+        app.dependency_overrides.pop(get_goal_service, None)
+
+
+def test_get_personal_dashboard_returns_404_when_not_synced():
+    from backend.auth.dependencies import get_current_user
+    from backend.dependencies import get_goal_service
+    from backend.main import app
+
+    mock_svc = MagicMock()
+    mock_svc.get_personal_dashboard = AsyncMock(
+        side_effect=HTTPException(status_code=404, detail="not_synced")
+    )
+
+    app.dependency_overrides[get_current_user] = _stub_user(_make_user())
+    app.dependency_overrides[get_goal_service] = lambda: mock_svc
+    try:
+        with (
+            patch("backend.main._run_migrations"),
+            TestClient(app, raise_server_exceptions=False) as client,
+        ):
+            response = client.get("/dashboard/personal")
+        assert response.status_code == 404
+        assert response.json()["detail"] == "not_synced"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+        app.dependency_overrides.pop(get_goal_service, None)
