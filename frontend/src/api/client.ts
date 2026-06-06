@@ -55,3 +55,38 @@ export async function postSync(): Promise<SyncResponse> {
   if (!res.ok) throw new Error(`/sync returned ${res.status}`)
   return res.json() as Promise<SyncResponse>
 }
+
+export interface DailyDistancePoint {
+  date: string        // YYYY-MM-DD
+  cumulative_km: number
+}
+
+export interface PersonalDashboard {
+  goal_km: number
+  distance_to_date_km: number
+  progress_pct: number
+  on_pace: boolean
+  expected_pct: number
+  last_sync_completed_at: string
+  daily_series: DailyDistancePoint[]
+}
+
+export interface GoalResponse {
+  yearly_running_goal_km: number
+}
+
+export async function getPersonalDashboard(): Promise<PersonalDashboard | null> {
+  const res = await apiFetch('/dashboard/personal')
+  if (res.status === 404) return null
+  if (!res.ok) throw new Error(`/dashboard/personal returned ${res.status}`)
+  return res.json() as Promise<PersonalDashboard>
+}
+
+export async function putGoal(km: number): Promise<GoalResponse> {
+  const res = await apiFetch('/goals', {
+    method: 'PUT',
+    body: JSON.stringify({ yearly_running_goal_km: km }),
+  })
+  if (!res.ok) throw new Error(`/goals returned ${res.status}`)
+  return res.json() as Promise<GoalResponse>
+}
