@@ -71,7 +71,7 @@ export default function PaceChart({ dailySeries, goalKm }: Props) {
   const { data, daysInYear } = buildChartData(dailySeries, goalKm)
   const style = getComputedStyle(document.documentElement)
   const accent    = style.getPropertyValue('--accent').trim()     || '#4b8cf7'
-  const accentDim = style.getPropertyValue('--accent-dim').trim() || 'rgba(75,140,247,0.08)'
+  const accentDim = style.getPropertyValue('--accent-dim').trim() || 'rgba(75,140,247,0.10)'
   const border    = style.getPropertyValue('--border').trim()     || '#272c3d'
   const text3     = style.getPropertyValue('--text-3').trim()     || '#3d4358'
   const surface2  = style.getPropertyValue('--surface-2').trim()  || '#1c2030'
