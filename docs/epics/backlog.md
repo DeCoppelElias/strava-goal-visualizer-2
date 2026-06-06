@@ -958,7 +958,7 @@ _Generated: May 2, 2026_
 
 ---
 
-#### TASK-5.2
+#### TASK-5.2 ✅
 
 **Name:** Implement `GET /goals` and `PUT /goals` endpoints
 
