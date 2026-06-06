@@ -30,7 +30,10 @@ function toDayOfYear(dateStr: string, year: number): number {
   return Math.floor((d - jan1) / 86400000) + 1
 }
 
-function buildChartData(dailySeries: DailyDistancePoint[], goalKm: number): ChartPoint[] {
+function buildChartData(
+  dailySeries: DailyDistancePoint[],
+  goalKm: number,
+): { data: ChartPoint[]; daysInYear: number } {
   const year = new Date().getFullYear()
   const isLeap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0
   const daysInYear = isLeap ? 366 : 365
@@ -53,7 +56,10 @@ function buildChartData(dailySeries: DailyDistancePoint[], goalKm: number): Char
     })
   }
 
-  return [...byDay.values()].sort((a, b) => a.day - b.day)
+  return {
+    data: [...byDay.values()].sort((a, b) => a.day - b.day),
+    daysInYear,
+  }
 }
 
 function monthTickFormatter(day: number): string {
@@ -62,12 +68,13 @@ function monthTickFormatter(day: number): string {
 }
 
 export default function PaceChart({ dailySeries, goalKm }: Props) {
-  const data = buildChartData(dailySeries, goalKm)
+  const { data, daysInYear } = buildChartData(dailySeries, goalKm)
   const style = getComputedStyle(document.documentElement)
-  const accent   = style.getPropertyValue('--accent').trim()   || '#4b8cf7'
-  const border   = style.getPropertyValue('--border').trim()   || '#272c3d'
-  const text3    = style.getPropertyValue('--text-3').trim()   || '#3d4358'
-  const surface2 = style.getPropertyValue('--surface-2').trim() || '#1c2030'
+  const accent    = style.getPropertyValue('--accent').trim()     || '#4b8cf7'
+  const accentDim = style.getPropertyValue('--accent-dim').trim() || 'rgba(75,140,247,0.08)'
+  const border    = style.getPropertyValue('--border').trim()     || '#272c3d'
+  const text3     = style.getPropertyValue('--text-3').trim()     || '#3d4358'
+  const surface2  = style.getPropertyValue('--surface-2').trim()  || '#1c2030'
 
   return (
     <ResponsiveContainer width="100%" height={240}>
@@ -76,7 +83,7 @@ export default function PaceChart({ dailySeries, goalKm }: Props) {
         <XAxis
           dataKey="day"
           type="number"
-          domain={[1, 365]}
+          domain={[1, daysInYear]}
           ticks={MONTH_START_DAYS}
           tickFormatter={monthTickFormatter}
           tick={{ fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fill: text3 }}
@@ -121,7 +128,7 @@ export default function PaceChart({ dailySeries, goalKm }: Props) {
         <Area
           dataKey="actual"
           stroke={accent}
-          fill="rgba(75,140,247,0.08)"
+          fill={accentDim}
           strokeWidth={2}
           dot={false}
           connectNulls
