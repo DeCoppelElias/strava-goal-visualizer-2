@@ -413,7 +413,7 @@ button {
   color: var(--text-3);
 }
 
-.sync-btn__spinner {
+.btn__spinner {
   width: 13px;
   height: 13px;
   border: 1.5px solid rgba(255, 255, 255, 0.2);

@@ -118,7 +118,7 @@ export default function DashboardPage({ athleteId }: Props) {
           >
             {syncing ? (
               <>
-                <span className="sync-btn__spinner" aria-hidden="true" />
+                <span className="btn__spinner" aria-hidden="true" />
                 Syncing…
               </>
             ) : (
@@ -247,7 +247,7 @@ export default function DashboardPage({ athleteId }: Props) {
                 >
                   {goalSaving ? (
                     <>
-                      <span className="sync-btn__spinner" aria-hidden="true" />
+                      <span className="btn__spinner" aria-hidden="true" />
                       Saving…
                     </>
                   ) : (

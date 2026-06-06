@@ -81,7 +81,14 @@ export default function HomePage({ user, onLogout }: Props) {
             {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
           </button>
           <button className="btn btn--ghost" onClick={handleLogout} disabled={loggingOut}>
-            {loggingOut ? '…' : 'Log out'}
+            {loggingOut ? (
+              <>
+                <span className="btn__spinner" aria-hidden="true" />
+                Logging out…
+              </>
+            ) : (
+              'Log out'
+            )}
           </button>
         </div>
       </nav>
