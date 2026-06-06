@@ -945,7 +945,7 @@ _Generated: May 2, 2026_
 **Input:** Goals table from TASK-5.1. Auth middleware from TASK-2.6.
 
 **Output:**
-- `backend/goals/schemas.py` — `GoalResponse(BaseModel)` with `yearly_distance_km: float`; `UpdateGoalRequest(BaseModel)` with `yearly_distance_km: float`
+- `backend/goals/schemas.py` — `GoalResponse(BaseModel)` with `yearly_running_goal_km: float`; `UpdateGoalRequest(BaseModel)` with `yearly_running_goal_km: float`
 - `backend/goals/router.py` — `GET /goals` returns `GoalResponse`; `PUT /goals` accepts `UpdateGoalRequest`, returns `GoalResponse`; both require `get_current_user`
 - Both return `403` if user attempts to set another user's goal (enforced by `get_current_user`)
 
@@ -953,7 +953,7 @@ _Generated: May 2, 2026_
 
 **Complexity:** Small
 
-**Testability:** `GET /goals` returns default 365 for new user. `PUT /goals {"yearly_distance_km": 500}` → `GET /goals` returns 500. Values outside range return `422`.
+**Testability:** `GET /goals` returns default 365 for new user. `PUT /goals {"yearly_running_goal_km": 500}` → `GET /goals` returns 500. Values outside range return `422`.
 
 ---
 
