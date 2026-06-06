@@ -603,7 +603,7 @@ _Generated: May 2, 2026_
 
 ---
 
-#### TASK-2.7.1 _(ad-hoc)_
+#### TASK-2.7.1 ✅ _(ad-hoc)_
 
 **Name:** Add missing rate limits to `GET /session/me` and `POST /session/logout`
 
@@ -1047,6 +1047,119 @@ _Generated: May 2, 2026_
 **Complexity:** Medium
 
 **Testability:** With synced data → dashboard shows correct distance and %. Update goal → progress % changes. Empty state shown for new user with no synced activities.
+
+---
+
+#### TASK-5.4.1 _(ad-hoc)_
+
+**Name:** Fix PaceChart light-mode fill and leap-year domain
+
+**Goal:** Two bugs in `PaceChart.tsx`: the area fill is hardcoded to the dark-mode rgba value so it doesn't adapt to light mode; and the X-axis domain hardcodes 365 (wrong in leap years).
+
+**Context:** Discovered during post-implementation frontend review against `docs/design/style.md`. Both are self-contained fixes in a single file.
+
+**Input:** `frontend/src/components/PaceChart.tsx`
+
+**Output:**
+- `buildChartData` returns `{ data, daysInYear }` so the caller can use the correct value
+- `PaceChart` reads `--accent-dim` via `getComputedStyle` (alongside the already-read `--accent`) and passes it as the `<Area fill>`
+- `<XAxis domain>` uses the returned `daysInYear` instead of the literal `365`
+
+**Dependencies:** TASK-5.4
+
+**Complexity:** Small
+
+**Testability:** In light mode, chart area fill visually matches the light-mode accent-dim. In leap years, the X-axis extends to day 366.
+
+---
+
+#### TASK-5.4.2 _(ad-hoc)_
+
+**Name:** Align dashboard CSS to style spec: section gap and page title size
+
+**Goal:** Two CSS values deviate from `docs/design/style.md`: `.dashboard-page` gap is 24px (spec: 48px) and `.page-title` is 22px (spec: 24px).
+
+**Context:** Discovered during post-implementation frontend review.
+
+**Input:** `frontend/src/index.css`
+
+**Output:**
+- `.dashboard-page { gap: 48px }` (was 24px)
+- `.page-title { font-size: 24px }` (was 22px)
+
+**Dependencies:** TASK-5.4
+
+**Complexity:** Small
+
+**Testability:** Dashboard cards have noticeably more breathing room between sections. Page title renders at 24px.
+
+---
+
+#### TASK-5.4.3 _(ad-hoc)_
+
+**Name:** Spinner consistency: rename class and add logout spinner
+
+**Goal:** `.sync-btn__spinner` is used in both the sync and goal-save buttons — the name is misleading. Rename to `.btn__spinner`. The logout button shows `"…"` without a spinner, inconsistent with other loading states.
+
+**Context:** Discovered during post-implementation frontend review.
+
+**Input:** `frontend/src/index.css`, `frontend/src/pages/DashboardPage.tsx`, `frontend/src/pages/HomePage.tsx`
+
+**Output:**
+- `index.css`: `.sync-btn__spinner` renamed to `.btn__spinner`
+- `DashboardPage.tsx`: both `sync-btn__spinner` references updated to `btn__spinner`
+- `HomePage.tsx`: logout button renders `<span className="btn__spinner" aria-hidden="true" /> Logging out…` while `loggingOut` is true
+
+**Dependencies:** TASK-5.4
+
+**Complexity:** Small
+
+**Testability:** Clicking "Log out" shows a spinner during the request. Sync and Save buttons show no visual regression.
+
+---
+
+#### TASK-5.4.4 _(ad-hoc)_
+
+**Name:** Replace raw athlete ID in page subtitle
+
+**Goal:** The page subtitle shows `Athlete #12345678` — a raw internal ID meaningless to users. Replace with the current year and goal context.
+
+**Context:** Discovered during post-implementation frontend review.
+
+**Input:** `frontend/src/pages/DashboardPage.tsx`
+
+**Output:**
+- Page subtitle changed from `` Athlete #{athleteId} `` to `` {new Date().getFullYear()} · Running Goal ``
+- `athleteId` prop is retained (used by the parent for data-fetching) but no longer displayed
+
+**Dependencies:** TASK-5.4
+
+**Complexity:** Small
+
+**Testability:** Dashboard subtitle reads `2026 · Running Goal` (or the current year).
+
+---
+
+#### TASK-5.4.5 ✅ _(ad-hoc)_
+
+**Name:** CSS micro-polish: unit label color and page fade-in
+
+**Goal:** Two small polish items: the "km" unit label next to the goal input uses `--text-3` (barely visible — `--text-2` is correct here), and the style guide specifies a 200ms page-level fade-in that is not yet implemented anywhere.
+
+**Context:** Discovered during post-implementation frontend review against `docs/design/style.md`.
+
+**Input:** `frontend/src/index.css`
+
+**Output:**
+- `.goal-input__unit { color: var(--text-2) }` (was `--text-3`)
+- `@keyframes fade-in { from { opacity: 0 } to { opacity: 1 } }` added to global CSS
+- `.app-shell` and `.login-center` both receive `animation: fade-in 200ms ease forwards`
+
+**Dependencies:** TASK-5.4
+
+**Complexity:** Small
+
+**Testability:** "km" label is clearly readable in both themes. Authenticated shell and login page both fade in on mount.
 
 ---
 
