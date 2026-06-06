@@ -278,12 +278,120 @@ button {
   margin-top: 16px;
 }
 
-/* ── Sync Page ───────────────────────────────────────── */
+/* ── Dashboard Page ──────────────────────────────────── */
 
-.sync-page {
+.dashboard-page {
   display: flex;
   flex-direction: column;
   gap: 24px;
+}
+
+.dash-loading {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-3);
+  letter-spacing: 0.04em;
+}
+
+.dash-empty {
+  font-size: 14px;
+  color: var(--text-2);
+}
+
+/* ── Stats Row ───────────────────────────────────────── */
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.stat-tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: background 180ms ease, border-color 180ms ease;
+}
+
+.stat-tile__value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.stat-tile__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.pace-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.pace-badge--on {
+  background: var(--success-dim);
+  color: var(--success);
+  border-color: var(--success-dim);
+}
+
+.pace-badge--behind {
+  background: var(--warning-dim);
+  color: var(--warning);
+  border-color: var(--warning-dim);
+}
+
+/* ── Goal Edit ───────────────────────────────────────── */
+
+.goal-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.goal-input {
+  width: 120px;
+  height: 34px;
+  padding: 0 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-1);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  transition: border-color 180ms ease, background 180ms ease;
+  -moz-appearance: textfield;
+}
+
+.goal-input::-webkit-outer-spin-button,
+.goal-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.goal-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.goal-input__unit {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--text-3);
 }
 
 .sync-result {
