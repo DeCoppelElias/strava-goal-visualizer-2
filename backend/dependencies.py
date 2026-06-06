@@ -2,6 +2,7 @@ from fastapi import Depends
 
 from backend.auth.state_token_service import StateTokenService
 from backend.auth.strava_oauth_service import StravaOAuthService
+from backend.goals.goals_service import GoalService
 from backend.shared.config import settings
 from backend.shared.crypto import Crypto
 from backend.sync.sync_service import SyncService
@@ -27,3 +28,7 @@ def get_sync_service(
     strava_oauth_service: StravaOAuthService = Depends(get_strava_oauth_service),  # noqa: B008
 ) -> SyncService:
     return SyncService(strava_oauth_service)
+
+
+def get_goal_service() -> GoalService:
+    return GoalService()

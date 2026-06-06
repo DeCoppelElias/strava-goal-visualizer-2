@@ -15,6 +15,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from starlette.middleware.sessions import SessionMiddleware
 
 from backend.auth.router import router as auth_router
+from backend.goals.router import router as goals_router
 from backend.shared.config import settings
 from backend.shared.db import engine
 from backend.shared.rate_limit import limiter
@@ -70,6 +71,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.include_router(auth_router)
 app.include_router(sync_router)
+app.include_router(goals_router)
 
 
 # ---------------------------------------------------------------------------
