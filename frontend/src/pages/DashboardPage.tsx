@@ -32,7 +32,7 @@ type DashState =
   | { status: 'error' }
   | { status: 'loaded'; data: PersonalDashboard }
 
-export default function DashboardPage({ athleteId }: Props) {
+export default function DashboardPage({ athleteId: _athleteId }: Props) {
   const [syncing, setSyncing] = useState(false)
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null)
   const [syncCount, setSyncCount] = useState<number | null>(null)
@@ -102,7 +102,7 @@ export default function DashboardPage({ athleteId }: Props) {
     <div className="dashboard-page">
       <div className="page-header">
         <h1 className="page-title">Dashboard</h1>
-        <p className="page-subtitle">Athlete #{athleteId}</p>
+        <p className="page-subtitle">{new Date().getFullYear()} · Running Goal</p>
       </div>
 
       {/* Sync card */}
