@@ -75,6 +75,24 @@ def test_logout_is_idempotent():
         app.dependency_overrides.pop(get_current_user, None)
 
 
+def test_logout_rate_limit_returns_429():
+    """Exceeding 10 req/min must yield 429."""
+    from backend.main import app
+    from backend.shared.rate_limit import limiter
+
+    user = User(id=1, strava_athlete_id=99999)
+
+    limiter.reset()
+    app.dependency_overrides[get_current_user] = _stub_user(user)
+    try:
+        with patch("backend.main._run_migrations"), TestClient(app) as client:
+            responses = [client.post("/session/logout") for _ in range(11)]
+        assert responses[-1].status_code == 429
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+        limiter.reset()
+
+
 # ---------------------------------------------------------------------------
 # StravaOAuthService.revoke_tokens
 # ---------------------------------------------------------------------------

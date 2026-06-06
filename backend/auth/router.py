@@ -71,7 +71,9 @@ async def oauth_callback(
 
 
 @router.get("/session/me", response_model=SessionMeResponse)
+@limiter.limit("60/minute")  # type: ignore[misc]
 async def session_me(
+    request: Request,
     current_user: User = Depends(get_current_user),  # noqa: B008
 ) -> SessionMeResponse:
     return SessionMeResponse(
@@ -81,6 +83,7 @@ async def session_me(
 
 
 @router.post("/session/logout", response_model=LogoutResponse)
+@limiter.limit("10/minute")  # type: ignore[misc]
 async def session_logout(
     request: Request,
     current_user: User = Depends(get_current_user),  # noqa: B008

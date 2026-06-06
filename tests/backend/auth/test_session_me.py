@@ -105,3 +105,29 @@ async def test_session_me_returns_user_data_when_authenticated():
         assert data["strava_athlete_id"] == 12345678
     finally:
         app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_session_me_rate_limit_returns_429():
+    """Exceeding 60 req/min must yield 429."""
+    from datetime import UTC, datetime
+
+    from backend.auth.dependencies import get_current_user
+    from backend.main import app
+    from backend.shared.rate_limit import limiter
+    from fastapi.testclient import TestClient
+
+    created = datetime(2026, 1, 1, tzinfo=UTC)
+    user = User(id=1, strava_athlete_id=12345678, created_at=created)
+
+    async def _return_user():
+        return user
+
+    limiter.reset()
+    app.dependency_overrides[get_current_user] = _return_user
+    try:
+        with patch("backend.main._run_migrations"), TestClient(app) as client:
+            responses = [client.get("/session/me") for _ in range(61)]
+        assert responses[-1].status_code == 429
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+        limiter.reset()
