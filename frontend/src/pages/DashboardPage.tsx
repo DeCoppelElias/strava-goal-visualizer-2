@@ -6,6 +6,7 @@ import {
   putGoal,
   type PersonalDashboard,
 } from '../api/client'
+import PaceChart from '../components/PaceChart'
 
 interface Props {
   athleteId: number
@@ -201,6 +202,23 @@ export default function DashboardPage({ athleteId }: Props) {
                 {dashState.data.on_pace ? 'On pace' : 'Behind pace'}
               </span>
               <span className="stat-tile__label">Pace</span>
+            </div>
+          </div>
+
+          {/* Pace chart card */}
+          <div className="card">
+            <div className="card__header">
+              <span className="card__label">Progress vs Pace</span>
+            </div>
+            <div className="card__body card__body--chart">
+              {dashState.data.daily_series.length === 0 ? (
+                <p className="chart-empty">No runs recorded this year yet.</p>
+              ) : (
+                <PaceChart
+                  dailySeries={dashState.data.daily_series}
+                  goalKm={dashState.data.goal_km}
+                />
+              )}
             </div>
           </div>
 

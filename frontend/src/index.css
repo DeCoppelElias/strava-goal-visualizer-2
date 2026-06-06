@@ -427,6 +427,19 @@ button {
   to { transform: rotate(360deg); }
 }
 
+/* ── Pace Chart ──────────────────────────────────────── */
+
+.card__body--chart {
+  padding: 16px 8px 8px;
+}
+
+.chart-empty {
+  font-size: 13px;
+  color: var(--text-3);
+  text-align: center;
+  padding: 32px 0;
+}
+
 /* ── Status Messages ─────────────────────────────────── */
 
 .status-msg {
