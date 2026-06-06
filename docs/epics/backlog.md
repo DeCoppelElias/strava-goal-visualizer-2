@@ -1008,12 +1008,13 @@ _Generated: May 2, 2026_
 - Filters activities by `user_id` and `start_date` in current calendar year — all stored activities are already runs, no `sport_type` filter needed at query time
 - `on_pace`: `distance_to_date_km >= expected_km_by_today` (linear pace model)
 - Only own data returned (enforced by `get_current_user`)
+- **No sync yet:** if `SyncState` row does not exist for the user, return `404` with `detail: "not_synced"`. This is distinct from a user who has synced but has zero running activities (returns 200 with `distance_to_date_km: 0`).
 
 **Dependencies:** TASK-5.2, TASK-3.4
 
 **Complexity:** Small
 
-**Testability:** Seed known activities → call `GET /dashboard/personal` → verify computed values match manual calculation. Ensure another user's activities are not included.
+**Testability:** Seed known activities → call `GET /dashboard/personal` → verify computed values match manual calculation. Ensure another user's activities are not included. Verify 404 is returned when no SyncState exists.
 
 ---
 
