@@ -229,7 +229,7 @@ button {
 }
 
 .page-title {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 600;
   color: var(--text-1);
   line-height: 1.2;
@@ -283,7 +283,7 @@ button {
 .dashboard-page {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 48px;
 }
 
 .dash-loading {
