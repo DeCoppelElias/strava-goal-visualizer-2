@@ -83,6 +83,27 @@ Every endpoint declares a named `response_model` using a Pydantic `BaseModel`. R
 
 A single `Limiter` instance from `backend/shared/rate_limit.py` is registered on `app.state.limiter` and reused across all domain routers. Decorating an endpoint with `@limiter.limit("N/minute")` uses this shared instance and its shared storage backend.
 
+**Every endpoint must carry a `@limiter.limit(...)` decorator.** The approved limits are:
+
+| Endpoint | Limit | Notes |
+|---|---|---|
+| `GET /health` | none | Infra/load balancer probe only |
+| `GET /health/db` | 10/minute | |
+| `POST /oauth/authorize` | 10/minute | |
+| `GET /oauth/callback` | 10/minute | |
+| `POST /oauth/revoke` | 10/minute | |
+| `GET /session/me` | 60/minute | Called on every app load |
+| `POST /session/logout` | 10/minute | |
+| `POST /sync` | 2/minute | Per-user cooldown is the primary throttle |
+| `GET /goals` | 30/minute | |
+| `PUT /goals` | 10/minute | |
+| `GET /dashboard/personal` | 30/minute | |
+| `GET /clubs` | 30/minute | |
+| `GET /clubs/{club_id}/progress` | 30/minute | |
+| `POST /privacy/export` | 5/hour | Data-heavy, sensitive |
+| `POST /privacy/delete` | 5/hour | Irreversible, sensitive |
+| `POST /strava/deauth` | 20/minute | Server-to-server webhook |
+
 ### 6.0.4 Database Access Pattern
 
 All database access uses the SQLAlchemy async ORM. The following conventions apply across all domains:

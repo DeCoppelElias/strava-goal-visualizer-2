@@ -603,6 +603,30 @@ _Generated: May 2, 2026_
 
 ---
 
+#### TASK-2.7.1 _(ad-hoc)_
+
+**Name:** Add missing rate limits to `GET /session/me` and `POST /session/logout`
+
+**Goal:** Apply the approved rate limits to the two implemented auth endpoints that were added without `@limiter.limit` decorators.
+
+**Context:** TASK-2.6 and TASK-2.7 were implemented before the project-wide rate-limiting policy was formalised. Both endpoints are missing their decorators. All endpoints must carry a rate limit per `docs/design.md` §6.0.3.
+
+**Input:** `backend/auth/router.py`.
+
+**Output:**
+- `GET /session/me` decorated with `@limiter.limit("60/minute")`
+- `POST /session/logout` decorated with `@limiter.limit("10/minute")`
+- Both route signatures gain a `request: Request` parameter (required by slowapi)
+- Existing tests updated if the `request` parameter changes the call signature
+
+**Dependencies:** TASK-2.7
+
+**Complexity:** Small
+
+**Testability:** `uv run pytest` passes. Both endpoints return `429` after exceeding their respective limits in a test.
+
+---
+
 #### TASK-2.8 ✅
 
 **Name:** React login page and session state
@@ -946,7 +970,7 @@ _Generated: May 2, 2026_
 
 **Output:**
 - `backend/goals/schemas.py` — `GoalResponse(BaseModel)` with `yearly_running_goal_km: float`; `UpdateGoalRequest(BaseModel)` with `yearly_running_goal_km: float`
-- `backend/goals/router.py` — `GET /goals` returns `GoalResponse`; `PUT /goals` accepts `UpdateGoalRequest`, returns `GoalResponse`; both require `get_current_user`
+- `backend/goals/router.py` — `GET /goals` (30/minute) returns `GoalResponse`; `PUT /goals` (10/minute) accepts `UpdateGoalRequest`, returns `GoalResponse`; both require `get_current_user`
 - Both return `403` if user attempts to set another user's goal (enforced by `get_current_user`)
 
 **Dependencies:** TASK-5.1, TASK-2.6
@@ -969,7 +993,7 @@ _Generated: May 2, 2026_
 
 **Output:**
 - `backend/goals/schemas.py` — `PersonalDashboardResponse(BaseModel)` with `goal_km`, `distance_to_date_km`, `progress_pct`, `on_pace`, `expected_pct`, `last_sync_completed_at` fields
-- `backend/goals/router.py` — `GET /dashboard/personal` returns `PersonalDashboardResponse`; requires `get_current_user`
+- `backend/goals/router.py` — `GET /dashboard/personal` (30/minute) returns `PersonalDashboardResponse`; requires `get_current_user`
 - Response shape:
   ```json
   {
@@ -1078,7 +1102,7 @@ _Generated: May 2, 2026_
 
 **Output:**
 - `backend/clubs/schemas.py` — `ClubResponse(BaseModel)` with `id: int`, `name: str`; endpoint returns `list[ClubResponse]`
-- `backend/clubs/router.py` — `GET /clubs` returns `list[ClubResponse]`; requires `get_current_user`
+- `backend/clubs/router.py` — `GET /clubs` (30/minute) returns `list[ClubResponse]`; requires `get_current_user`
 - Returns `[]` if no clubs or no sync has occurred
 - Only own memberships returned
 
@@ -1102,7 +1126,7 @@ _Generated: May 2, 2026_
 
 **Output:**
 - `backend/clubs/schemas.py` — `MemberProgressResponse(BaseModel)` with `strava_athlete_id: int`, `distance_to_date_km: float`, `goal_km: float`, `progress_pct: float`; endpoint returns `list[MemberProgressResponse]`
-- `backend/clubs/router.py` — `GET /clubs/{club_id}/progress` returns `list[MemberProgressResponse]`; requires `get_current_user`
+- `backend/clubs/router.py` — `GET /clubs/{club_id}/progress` (30/minute) returns `list[MemberProgressResponse]`; requires `get_current_user`
 - Validates that the authenticated user is a member of `club_id`; returns `403` otherwise
 - Returns list of members who are app-authorized AND members of that club:
   ```json
@@ -1209,7 +1233,7 @@ _Generated: May 2, 2026_
 **Input:** All user-related tables. Auth middleware.
 
 **Output:**
-- `backend/privacy/router.py` — `POST /privacy/export` returns a `Response` with `Content-Disposition: attachment; filename="strava-export.json"` (file download, not a JSON schema response); rate limited; requires `get_current_user`
+- `backend/privacy/router.py` — `POST /privacy/export` (5/hour) returns a `Response` with `Content-Disposition: attachment; filename="strava-export.json"` (file download, not a JSON schema response); requires `get_current_user`
 - Export payload contains: user record (athlete ID, created_at), goal, all activities (all fields except internal PKs), club memberships, sync state
 - Tokens are NEVER included in the export
 
@@ -1233,7 +1257,7 @@ _Generated: May 2, 2026_
 
 **Output:**
 - `backend/privacy/schemas.py` — `DeleteResponse(BaseModel)` with `deleted: bool`
-- `backend/privacy/router.py` — `POST /privacy/delete` calls `delete_user_data`, clears `request.session`, returns `DeleteResponse(deleted=True)`; rate limited; requires `get_current_user`
+- `backend/privacy/router.py` — `POST /privacy/delete` (5/hour) calls `delete_user_data`, clears `request.session`, returns `DeleteResponse(deleted=True)`; requires `get_current_user`
 
 **Dependencies:** TASK-7.2, TASK-2.6
 
@@ -1254,7 +1278,7 @@ _Generated: May 2, 2026_
 **Input:** Deletion service from TASK-7.2. Strava deauth payload and signature scheme.
 
 **Output:**
-- `backend/privacy/router.py` — `POST /strava/deauth` (no auth required — Strava server call; verified by signature instead)
+- `backend/privacy/router.py` — `POST /strava/deauth` (20/minute; no auth required — Strava server call; verified by signature instead)
 - Verifies the request using Strava's `client_secret`-based signature (or Strava-specified verification method)
 - Looks up user by `strava_athlete_id` from payload
 - Calls `delete_user_data(db, user_id, reason="strava_deauth")`
