@@ -23,7 +23,14 @@ def _make_sync_state() -> SyncState:
     return state
 
 
-def _make_db_for_dashboard(sync_state: object, goal: object, sum_meters: object) -> AsyncMock:
+def _make_activity_row(dt: _real_datetime, meters: float) -> MagicMock:
+    row = MagicMock()
+    row.start_date = dt
+    row.distance_meters = Decimal(str(meters))
+    return row
+
+
+def _make_db_for_dashboard(sync_state: object, goal: object, activity_rows: list) -> AsyncMock:
     """Mock db for get_personal_dashboard: 3 sequential execute() calls."""
     sync_result = MagicMock()
     sync_result.scalar_one_or_none.return_value = sync_state
@@ -31,11 +38,11 @@ def _make_db_for_dashboard(sync_state: object, goal: object, sum_meters: object)
     goal_result = MagicMock()
     goal_result.scalar_one_or_none.return_value = goal
 
-    sum_result = MagicMock()
-    sum_result.scalar.return_value = sum_meters
+    activities_result = MagicMock()
+    activities_result.all.return_value = activity_rows
 
     db = AsyncMock()
-    db.execute = AsyncMock(side_effect=[sync_result, goal_result, sum_result])
+    db.execute = AsyncMock(side_effect=[sync_result, goal_result, activities_result])
     return db
 
 
@@ -47,7 +54,7 @@ _FIXED_NOW = _real_datetime(2026, 6, 6, 12, 0, 0, tzinfo=UTC)
 
 async def test_get_personal_dashboard_raises_404_when_no_sync_state():
     svc = DashboardService()
-    db = _make_db_for_dashboard(sync_state=None, goal=_make_goal(), sum_meters=None)
+    db = _make_db_for_dashboard(sync_state=None, goal=_make_goal(), activity_rows=[])
     with pytest.raises(HTTPException) as exc_info:
         await svc.get_personal_dashboard(db, user_id=1)
     assert exc_info.value.status_code == 404
@@ -56,7 +63,7 @@ async def test_get_personal_dashboard_raises_404_when_no_sync_state():
 
 async def test_get_personal_dashboard_raises_404_when_no_goal():
     svc = DashboardService()
-    db = _make_db_for_dashboard(sync_state=_make_sync_state(), goal=None, sum_meters=None)
+    db = _make_db_for_dashboard(sync_state=_make_sync_state(), goal=None, activity_rows=[])
     with pytest.raises(HTTPException) as exc_info:
         await svc.get_personal_dashboard(db, user_id=1)
     assert exc_info.value.status_code == 404
@@ -68,7 +75,7 @@ async def test_get_personal_dashboard_returns_zero_when_no_activities():
     db = _make_db_for_dashboard(
         sync_state=_make_sync_state(),
         goal=_make_goal(365.0),
-        sum_meters=None,
+        activity_rows=[],
     )
     with patch("backend.dashboard.dashboard_service.datetime") as mock_dt:
         mock_dt.now.return_value = _FIXED_NOW
@@ -87,7 +94,9 @@ async def test_get_personal_dashboard_on_pace_true_when_ahead():
     db = _make_db_for_dashboard(
         sync_state=sync,
         goal=_make_goal(365.0),
-        sum_meters=Decimal("200000"),
+        activity_rows=[
+            _make_activity_row(_real_datetime(2026, 1, 1, 8, 0, 0, tzinfo=UTC), 200_000)
+        ],
     )
     with patch("backend.dashboard.dashboard_service.datetime") as mock_dt:
         mock_dt.now.return_value = _FIXED_NOW
@@ -108,7 +117,9 @@ async def test_get_personal_dashboard_on_pace_false_when_behind():
     db = _make_db_for_dashboard(
         sync_state=_make_sync_state(),
         goal=_make_goal(365.0),
-        sum_meters=Decimal("142500"),
+        activity_rows=[
+            _make_activity_row(_real_datetime(2026, 1, 1, 8, 0, 0, tzinfo=UTC), 142_500)
+        ],
     )
     with patch("backend.dashboard.dashboard_service.datetime") as mock_dt:
         mock_dt.now.return_value = _FIXED_NOW
@@ -118,3 +129,76 @@ async def test_get_personal_dashboard_on_pace_false_when_behind():
     assert result.progress_pct == 39.04
     assert result.on_pace is False
     assert result.expected_pct == 43.01
+
+
+async def test_daily_series_empty_when_no_activities():
+    svc = DashboardService()
+    db = _make_db_for_dashboard(
+        sync_state=_make_sync_state(),
+        goal=_make_goal(365.0),
+        activity_rows=[],
+    )
+    with patch("backend.dashboard.dashboard_service.datetime") as mock_dt:
+        mock_dt.now.return_value = _FIXED_NOW
+        mock_dt.side_effect = _real_datetime
+        result = await svc.get_personal_dashboard(db, user_id=1)
+    assert result.daily_series == []
+
+
+async def test_daily_series_single_activity():
+    svc = DashboardService()
+    act = _make_activity_row(_real_datetime(2026, 3, 15, 8, 0, 0, tzinfo=UTC), 10_000)
+    db = _make_db_for_dashboard(
+        sync_state=_make_sync_state(),
+        goal=_make_goal(365.0),
+        activity_rows=[act],
+    )
+    with patch("backend.dashboard.dashboard_service.datetime") as mock_dt:
+        mock_dt.now.return_value = _FIXED_NOW
+        mock_dt.side_effect = _real_datetime
+        result = await svc.get_personal_dashboard(db, user_id=1)
+    assert len(result.daily_series) == 1
+    assert result.daily_series[0].date == "2026-03-15"
+    assert result.daily_series[0].cumulative_km == 10.0
+
+
+async def test_daily_series_multiple_days_cumulative():
+    svc = DashboardService()
+    rows = [
+        _make_activity_row(_real_datetime(2026, 3, 1, 8, 0, 0, tzinfo=UTC), 5_000),
+        _make_activity_row(_real_datetime(2026, 4, 1, 8, 0, 0, tzinfo=UTC), 10_000),
+    ]
+    db = _make_db_for_dashboard(
+        sync_state=_make_sync_state(),
+        goal=_make_goal(365.0),
+        activity_rows=rows,
+    )
+    with patch("backend.dashboard.dashboard_service.datetime") as mock_dt:
+        mock_dt.now.return_value = _FIXED_NOW
+        mock_dt.side_effect = _real_datetime
+        result = await svc.get_personal_dashboard(db, user_id=1)
+    assert len(result.daily_series) == 2
+    assert result.daily_series[0].date == "2026-03-01"
+    assert result.daily_series[0].cumulative_km == 5.0
+    assert result.daily_series[1].date == "2026-04-01"
+    assert result.daily_series[1].cumulative_km == 15.0
+
+
+async def test_daily_series_two_runs_same_day_merged():
+    svc = DashboardService()
+    rows = [
+        _make_activity_row(_real_datetime(2026, 5, 10, 7, 0, 0, tzinfo=UTC), 3_000),
+        _make_activity_row(_real_datetime(2026, 5, 10, 18, 0, 0, tzinfo=UTC), 7_000),
+    ]
+    db = _make_db_for_dashboard(
+        sync_state=_make_sync_state(),
+        goal=_make_goal(365.0),
+        activity_rows=rows,
+    )
+    with patch("backend.dashboard.dashboard_service.datetime") as mock_dt:
+        mock_dt.now.return_value = _FIXED_NOW
+        mock_dt.side_effect = _real_datetime
+        result = await svc.get_personal_dashboard(db, user_id=1)
+    assert len(result.daily_series) == 1
+    assert result.daily_series[0].date == "2026-05-10"
+    assert result.daily_series[0].cumulative_km == 10.0
