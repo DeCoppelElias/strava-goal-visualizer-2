@@ -1018,6 +1018,16 @@ _Generated: May 2, 2026_
 
 ---
 
+#### AD-HOC ✅
+
+**Name:** Move personal dashboard into `dashboard/` domain
+
+**Goal:** Separate cross-domain dashboard logic from `GoalService` so goal CRUD stays clean and `/dashboard/*` routes have a dedicated home ahead of the club dashboard.
+
+**Changes:** Created `backend/dashboard/` domain (`schemas.py`, `dashboard_service.py`, `router.py`). Removed `get_personal_dashboard` and `PersonalDashboardResponse` from goals domain. Updated `dependencies.py` and `main.py`. Moved all dashboard tests to `tests/backend/dashboard/`.
+
+---
+
 #### TASK-5.4
 
 **Name:** Personal goal dashboard page
