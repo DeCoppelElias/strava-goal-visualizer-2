@@ -170,3 +170,7 @@ def test_put_goals_returns_422_for_km_above_100000():
     finally:
         app.dependency_overrides.pop(get_current_user, None)
         app.dependency_overrides.pop(get_goal_service, None)
+
+
+def test_personal_dashboard_response_schema_importable():
+    from backend.goals.schemas import PersonalDashboardResponse  # noqa: F401
