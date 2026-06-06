@@ -68,6 +68,7 @@ def test_get_personal_dashboard_returns_200_with_correct_shape():
         on_pace=False,
         expected_pct=43.01,
         last_sync_completed_at=fixed_time,
+        daily_series=[],
     )
     mock_svc = MagicMock()
     mock_svc.get_personal_dashboard = AsyncMock(return_value=mock_response)
@@ -85,6 +86,7 @@ def test_get_personal_dashboard_returns_200_with_correct_shape():
         assert data["on_pace"] is False
         assert data["expected_pct"] == 43.01
         assert "last_sync_completed_at" in data
+        assert data["daily_series"] == []
     finally:
         app.dependency_overrides.pop(get_current_user, None)
         app.dependency_overrides.pop(get_dashboard_service, None)
@@ -113,3 +115,24 @@ def test_get_personal_dashboard_returns_404_when_not_synced():
     finally:
         app.dependency_overrides.pop(get_current_user, None)
         app.dependency_overrides.pop(get_dashboard_service, None)
+
+
+def test_personal_dashboard_response_includes_daily_series():
+    from datetime import UTC, datetime
+
+    from backend.dashboard.schemas import DailyDistancePoint, PersonalDashboardResponse
+
+    point = DailyDistancePoint(date="2026-03-15", cumulative_km=10.0)
+    assert point.date == "2026-03-15"
+    assert point.cumulative_km == 10.0
+
+    resp = PersonalDashboardResponse(
+        goal_km=365.0,
+        distance_to_date_km=10.0,
+        progress_pct=2.74,
+        on_pace=False,
+        expected_pct=20.0,
+        last_sync_completed_at=datetime(2026, 3, 15, tzinfo=UTC),
+        daily_series=[point],
+    )
+    assert len(resp.daily_series) == 1
