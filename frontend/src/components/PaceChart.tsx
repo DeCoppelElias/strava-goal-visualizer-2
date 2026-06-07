@@ -79,7 +79,7 @@ function monthTickFormatter(day: number): string {
 }
 
 export default function PaceChart({ dailySeries, goalKm, showHighlight = true }: Props) {
-  const { data, daysInYear, todayDayOfYear } = buildChartData(dailySeries, goalKm)
+  const { data, daysInYear } = buildChartData(dailySeries, goalKm)
   const style = getComputedStyle(document.documentElement)
   const accent   = style.getPropertyValue('--accent').trim()    || '#4b8cf7'
   const border   = style.getPropertyValue('--border').trim()    || '#272c3d'
@@ -87,9 +87,14 @@ export default function PaceChart({ dailySeries, goalKm, showHighlight = true }:
   const text3    = style.getPropertyValue('--text-3').trim()    || '#3d4358'
   const surface2 = style.getPropertyValue('--surface-2').trim() || '#1c2030'
 
+  const year = new Date().getFullYear()
+  const lastActualDay = dailySeries.length > 0
+    ? toDayOfYear(dailySeries[dailySeries.length - 1].date, year)
+    : null
+
   const renderActualDot = (props: { cx: number; cy: number; payload: ChartPoint }) => {
     const { cx, cy, payload } = props
-    if (!showHighlight || payload.day !== todayDayOfYear || payload.actual === undefined) {
+    if (!showHighlight || lastActualDay === null || payload.day !== lastActualDay) {
       return <circle r={0} cx={cx} cy={cy} fill="transparent" />
     }
     return (
@@ -103,7 +108,7 @@ export default function PaceChart({ dailySeries, goalKm, showHighlight = true }:
           fontFamily="JetBrains Mono, monospace"
           fill={text1}
         >
-          {payload.actual.toFixed(1)} km
+          {payload.actual!.toFixed(1)} km
         </text>
       </g>
     )
@@ -111,7 +116,7 @@ export default function PaceChart({ dailySeries, goalKm, showHighlight = true }:
 
   const renderPaceDot = (props: { cx: number; cy: number; payload: ChartPoint }) => {
     const { cx, cy, payload } = props
-    if (!showHighlight || payload.day !== todayDayOfYear) {
+    if (!showHighlight || lastActualDay === null || payload.day !== lastActualDay) {
       return <circle r={0} cx={cx} cy={cy} fill="transparent" />
     }
     return <circle cx={cx} cy={cy} r={3} fill={text3} />
