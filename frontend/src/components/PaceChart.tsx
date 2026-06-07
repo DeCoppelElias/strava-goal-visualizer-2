@@ -13,6 +13,7 @@ import type { DailyDistancePoint } from '../api/client'
 interface Props {
   dailySeries: DailyDistancePoint[]
   goalKm: number
+  showHighlight?: boolean
 }
 
 interface ChartPoint {
@@ -33,10 +34,14 @@ function toDayOfYear(dateStr: string, year: number): number {
 function buildChartData(
   dailySeries: DailyDistancePoint[],
   goalKm: number,
-): { data: ChartPoint[]; daysInYear: number } {
+): { data: ChartPoint[]; daysInYear: number; todayDayOfYear: number } {
   const year = new Date().getFullYear()
   const isLeap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0
   const daysInYear = isLeap ? 366 : 365
+
+  const today = new Date()
+  const todayDayOfYear =
+    Math.floor((today.getTime() - new Date(year, 0, 1).getTime()) / 86400000) + 1
 
   const paceAt = (day: number) => Math.round((day / daysInYear) * goalKm * 10) / 10
 
@@ -44,6 +49,11 @@ function buildChartData(
 
   for (const day of [...MONTH_START_DAYS, daysInYear]) {
     byDay.set(day, { day, pace: paceAt(day) })
+  }
+
+  // Guarantee today always has a chart point so the highlight dot can render
+  if (!byDay.has(todayDayOfYear)) {
+    byDay.set(todayDayOfYear, { day: todayDayOfYear, pace: paceAt(todayDayOfYear) })
   }
 
   for (const p of dailySeries) {
@@ -59,6 +69,7 @@ function buildChartData(
   return {
     data: [...byDay.values()].sort((a, b) => a.day - b.day),
     daysInYear,
+    todayDayOfYear,
   }
 }
 
@@ -67,18 +78,48 @@ function monthTickFormatter(day: number): string {
   return idx >= 0 ? MONTH_LABELS[idx] : ''
 }
 
-export default function PaceChart({ dailySeries, goalKm }: Props) {
-  const { data, daysInYear } = buildChartData(dailySeries, goalKm)
+export default function PaceChart({ dailySeries, goalKm, showHighlight = true }: Props) {
+  const { data, daysInYear, todayDayOfYear } = buildChartData(dailySeries, goalKm)
   const style = getComputedStyle(document.documentElement)
-  const accent    = style.getPropertyValue('--accent').trim()     || '#4b8cf7'
-  const accentDim = style.getPropertyValue('--accent-dim').trim() || 'rgba(75,140,247,0.10)'
-  const border    = style.getPropertyValue('--border').trim()     || '#272c3d'
-  const text3     = style.getPropertyValue('--text-3').trim()     || '#3d4358'
-  const surface2  = style.getPropertyValue('--surface-2').trim()  || '#1c2030'
+  const accent   = style.getPropertyValue('--accent').trim()    || '#4b8cf7'
+  const border   = style.getPropertyValue('--border').trim()    || '#272c3d'
+  const text1    = style.getPropertyValue('--text-1').trim()    || '#e8eaf0'
+  const text3    = style.getPropertyValue('--text-3').trim()    || '#3d4358'
+  const surface2 = style.getPropertyValue('--surface-2').trim() || '#1c2030'
+
+  const renderActualDot = (props: { cx: number; cy: number; payload: ChartPoint }) => {
+    const { cx, cy, payload } = props
+    if (!showHighlight || payload.day !== todayDayOfYear || payload.actual === undefined) {
+      return <circle r={0} cx={cx} cy={cy} fill="transparent" />
+    }
+    return (
+      <g>
+        <circle cx={cx} cy={cy} r={4} fill={accent} />
+        <text
+          x={cx}
+          y={cy - 10}
+          textAnchor="middle"
+          fontSize={11}
+          fontFamily="JetBrains Mono, monospace"
+          fill={text1}
+        >
+          {payload.actual.toFixed(1)} km
+        </text>
+      </g>
+    )
+  }
+
+  const renderPaceDot = (props: { cx: number; cy: number; payload: ChartPoint }) => {
+    const { cx, cy, payload } = props
+    if (!showHighlight || payload.day !== todayDayOfYear) {
+      return <circle r={0} cx={cx} cy={cy} fill="transparent" />
+    }
+    return <circle cx={cx} cy={cy} r={3} fill={text3} />
+  }
 
   return (
     <ResponsiveContainer width="100%" height={240}>
-      <ComposedChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+      <ComposedChart data={data} margin={{ top: 20, right: 8, bottom: 0, left: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke={border} vertical={false} />
         <XAxis
           dataKey="day"
@@ -122,15 +163,15 @@ export default function PaceChart({ dailySeries, goalKm }: Props) {
           stroke={text3}
           strokeDasharray="4 4"
           strokeWidth={1.5}
-          dot={false}
+          dot={renderPaceDot as (props: unknown) => JSX.Element}
           connectNulls
         />
         <Area
           dataKey="actual"
           stroke={accent}
-          fill={accentDim}
+          fill="transparent"
           strokeWidth={2}
-          dot={false}
+          dot={renderActualDot as (props: unknown) => JSX.Element}
           connectNulls
         />
       </ComposedChart>
