@@ -398,4 +398,26 @@ Required Strava scopes: `activity:read_all`, `profile:read_all`. Both must be gr
 | Deleted/private activities not reflected in v1 | Explicit non-goal documented; users informed via last-sync timestamp |
 | Deauthorization callback partially fails | Error logged; operator resolves manually |
 | Session cookie theft | `Secure` + `HttpOnly` + `SameSite=Lax`; session rotation on login |
+
+---
+
+## 18. Future Feature Ideas
+
+Ideas for post-v1 enhancements that are out of scope for the current milestone but worth capturing.
+
+### 18.1 Achievement Badges (Gamification)
+
+Display milestone badges on the personal dashboard when the user's current year-to-date running distance crosses fixed thresholds. Badge state is derived entirely from the existing yearly-total metric — no new sync logic or persistent award table required.
+
+| Badge | Threshold | Working name |
+|---|---|---|
+| Bronze | 10 km in a year | First Steps |
+| Silver | 100 km in a year | Century |
+| Gold | 365 km in a year | One a Day |
+| Platinum | 1 000 km in a year | Thousand |
+
+**Design notes:**
+- A badge is shown as earned when `yearly_total_km >= threshold`; it reverts to unearned if the total drops below (e.g. after a deleted activity sync). No historical state is stored.
+- Badges are visible only to the athlete (not in club views) to keep the club view non-competitive.
+- Visual treatment should follow the Calm Dashboard aesthetic: small, understated icons or chips. Earned badges appear in full colour; unearned ones are shown as muted outlines to give a sense of what is reachable.
 | Strava token expiry during fixed session | Silent refresh on access token expiry; immediate logout and re-auth prompt on refresh token failure |
