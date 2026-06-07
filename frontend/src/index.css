@@ -227,6 +227,34 @@ button {
 
 .page-header {
   margin-bottom: 32px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sync-inline {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.sync-feedback {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-3);
+  letter-spacing: 0.02em;
+}
+
+.sync-feedback--warning {
+  color: var(--warning);
+}
+
+.sync-feedback--danger {
+  color: var(--danger);
 }
 
 .page-title {
@@ -299,61 +327,45 @@ button {
   color: var(--text-2);
 }
 
-/* ── Stats Row ───────────────────────────────────────── */
+/* ── Stats Table ────────────────────────────────────────── */
 
-.stats-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-}
-
-.stat-tile {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 20px;
+.stats-table {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  transition: background 180ms ease, border-color 180ms ease;
+  width: 100%;
 }
 
-.stat-tile__value {
+.stats-table__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  transition: border-color 180ms ease;
+}
+
+.stats-table__row:last-child {
+  border-bottom: none;
+}
+
+.stats-table__label {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.stats-table__value {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 20px;
+  font-size: 13px;
   font-weight: 500;
-  color: var(--accent);
+  color: var(--text-1);
 }
 
-.stat-tile__label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--text-3);
-}
-
-.pace-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  border-radius: 100px;
-  font-size: 12px;
-  font-weight: 600;
-  border: 1px solid transparent;
-}
-
-.pace-badge--on {
-  background: var(--success-dim);
+.stats-table__value--success {
   color: var(--success);
-  border-color: var(--success-dim);
 }
 
-.pace-badge--behind {
-  background: var(--warning-dim);
-  color: var(--warning);
-  border-color: var(--warning-dim);
+.stats-table__value--danger {
+  color: var(--danger);
 }
 
 /* ── Goal Edit ───────────────────────────────────────── */
@@ -395,24 +407,6 @@ button {
   color: var(--text-2);
 }
 
-.sync-result {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.sync-count {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 18px;
-  font-weight: 500;
-  color: var(--accent);
-}
-
-.sync-timestamp {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  color: var(--text-3);
-}
 
 .btn__spinner {
   width: 13px;
