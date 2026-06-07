@@ -101,18 +101,13 @@ export default function DashboardPage({ athleteId: _athleteId }: Props) {
   return (
     <div className="dashboard-page">
       <div className="page-header">
-        <h1 className="page-title">Dashboard</h1>
-        <p className="page-subtitle">{new Date().getFullYear()} · Running Goal</p>
-      </div>
-
-      {/* Sync card */}
-      <div className="card">
-        <div className="card__header">
-          <span className="card__label">Sync Activities</span>
+        <div>
+          <h1 className="page-title">Dashboard</h1>
+          <p className="page-subtitle">{new Date().getFullYear()} · Running Goal</p>
         </div>
-        <div className="card__body">
+        <div className="sync-inline">
           <button
-            className="btn btn--primary"
+            className="btn btn--ghost"
             onClick={() => void handleSync()}
             disabled={syncing}
           >
@@ -122,29 +117,23 @@ export default function DashboardPage({ athleteId: _athleteId }: Props) {
                 Syncing…
               </>
             ) : (
-              'Sync Activities'
+              'Sync'
             )}
           </button>
-
           {syncCount !== null && lastSyncAt !== null && (
-            <div className="sync-result">
-              <p className="sync-count">
-                {syncCount} {syncCount === 1 ? 'run' : 'runs'} synced
-              </p>
-              <p className="sync-timestamp">Last synced {formatSyncTime(lastSyncAt)}</p>
-            </div>
+            <span className="sync-feedback">
+              {syncCount} {syncCount === 1 ? 'run' : 'runs'} synced · Last synced {formatSyncTime(lastSyncAt)}
+            </span>
           )}
-
           {syncError?.type === 'cooldown' && (
-            <p className="status-msg status-msg--warning" role="alert">
-              Sync unavailable — try again in {Math.ceil(syncError.retryAfterSeconds / 60)} min
-            </p>
+            <span className="sync-feedback sync-feedback--warning" role="alert">
+              Try again in {Math.ceil(syncError.retryAfterSeconds / 60)} min
+            </span>
           )}
-
           {syncError?.type === 'api' && (
-            <p className="status-msg status-msg--danger" role="alert">
-              Sync failed — please try again.
-            </p>
+            <span className="sync-feedback sync-feedback--danger" role="alert">
+              Sync failed — please try again
+            </span>
           )}
         </div>
       </div>
