@@ -22,6 +22,21 @@ function formatSyncTime(iso: string): string {
   })
 }
 
+function computeDashStats(data: PersonalDashboard) {
+  const today = new Date()
+  const year = today.getFullYear()
+  const isLeap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0
+  const daysInYear = isLeap ? 366 : 365
+  const dayOfYear =
+    Math.floor((today.getTime() - new Date(year, 0, 1).getTime()) / 86400000) + 1
+  const remainingKm = data.goal_km - data.distance_to_date_km
+  const remainingWeeks = (daysInYear - dayOfYear) / 7
+  const neededWeeklyPace = remainingKm <= 0 ? null : remainingKm / remainingWeeks
+  const idealToDate = (dayOfYear / daysInYear) * data.goal_km
+  const vsIdeal = data.distance_to_date_km - idealToDate
+  return { neededWeeklyPace, vsIdeal }
+}
+
 type SyncError =
   | { type: 'cooldown'; retryAfterSeconds: number }
   | { type: 'api' }
@@ -98,6 +113,8 @@ export default function DashboardPage({ athleteId: _athleteId }: Props) {
     }
   }
 
+  const dashStats = dashState.status === 'loaded' ? computeDashStats(dashState.data) : null
+
   return (
     <div className="dashboard-page">
       <div className="page-header">
@@ -168,31 +185,55 @@ export default function DashboardPage({ athleteId: _athleteId }: Props) {
 
       {dashState.status === 'loaded' && (
         <>
-          {/* Stats row */}
-          <div className="stats-row">
-            <div className="stat-tile">
-              <span className="stat-tile__value">
-                {dashState.data.distance_to_date_km.toFixed(1)}
-              </span>
-              <span className="stat-tile__label">Total km</span>
+          {/* Stats card */}
+          {dashStats && (
+            <div className="card">
+              <div className="card__header">
+                <span className="card__label">Stats</span>
+              </div>
+              <div className="card__body">
+                <div className="stats-table">
+                  <div className="stats-table__row">
+                    <span className="stats-table__label">Total distance</span>
+                    <span className="stats-table__value">
+                      {dashState.data.distance_to_date_km.toFixed(1)} km
+                    </span>
+                  </div>
+                  <div className="stats-table__row">
+                    <span className="stats-table__label">Progress</span>
+                    <span className="stats-table__value">
+                      {dashState.data.progress_pct.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="stats-table__row">
+                    <span className="stats-table__label">Needed weekly pace</span>
+                    <span
+                      className={`stats-table__value${
+                        dashStats.neededWeeklyPace === null ? ' stats-table__value--success' : ''
+                      }`}
+                    >
+                      {dashStats.neededWeeklyPace === null
+                        ? 'Goal achieved'
+                        : `${dashStats.neededWeeklyPace.toFixed(1)} km/week`}
+                    </span>
+                  </div>
+                  <div className="stats-table__row">
+                    <span className="stats-table__label">vs. Ideal</span>
+                    <span
+                      className={`stats-table__value ${
+                        dashStats.vsIdeal >= 0
+                          ? 'stats-table__value--success'
+                          : 'stats-table__value--danger'
+                      }`}
+                    >
+                      {dashStats.vsIdeal >= 0 ? '+' : ''}
+                      {dashStats.vsIdeal.toFixed(1)} km
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="stat-tile">
-              <span className="stat-tile__value">
-                {dashState.data.progress_pct.toFixed(1)}%
-              </span>
-              <span className="stat-tile__label">Complete</span>
-            </div>
-            <div className="stat-tile">
-              <span
-                className={`pace-badge ${
-                  dashState.data.on_pace ? 'pace-badge--on' : 'pace-badge--behind'
-                }`}
-              >
-                {dashState.data.on_pace ? 'On pace' : 'Behind pace'}
-              </span>
-              <span className="stat-tile__label">Pace</span>
-            </div>
-          </div>
+          )}
 
           {/* Pace chart card */}
           <div className="card">
