@@ -36,6 +36,7 @@ class User(Base):
     activities: Mapped[list["Activity"]] = relationship(back_populates="user")
     sync_state: Mapped[Optional["SyncState"]] = relationship(back_populates="user", uselist=False)
     goal: Mapped[Optional["Goal"]] = relationship(back_populates="user", uselist=False)
+    club_memberships: Mapped[list["ClubMembership"]] = relationship(back_populates="user")
 
 
 class OAuthCredentials(Base):
@@ -102,3 +103,25 @@ class Goal(Base):
     updated_at: Mapped[datetime] = mapped_column(_tz, default=_now, onupdate=_now)
 
     user: Mapped["User"] = relationship(back_populates="goal")
+
+
+class Club(Base):
+    __tablename__ = "clubs"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    name: Mapped[str] = mapped_column(Text)
+    updated_at: Mapped[datetime] = mapped_column(_tz, default=_now)
+
+    memberships: Mapped[list["ClubMembership"]] = relationship(back_populates="club")
+
+
+class ClubMembership(Base):
+    __tablename__ = "club_memberships"
+    __table_args__ = (Index("ix_club_memberships_club_id", "club_id"),)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    club_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("clubs.id"), primary_key=True)
+    synced_at: Mapped[datetime] = mapped_column(_tz)
+
+    user: Mapped["User"] = relationship(back_populates="club_memberships")
+    club: Mapped["Club"] = relationship(back_populates="memberships")
