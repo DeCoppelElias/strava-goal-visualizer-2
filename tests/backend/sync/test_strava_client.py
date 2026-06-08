@@ -1,7 +1,13 @@
 import httpx
 import pytest
 from backend.sync.exceptions import StravaAPIError, StravaUnauthorizedError
-from backend.sync.strava_client import STRAVA_ACTIVITIES_URL, fetch_activities, fetch_all_activities
+from backend.sync.strava_client import (
+    STRAVA_ACTIVITIES_URL,
+    STRAVA_CLUBS_URL,
+    fetch_activities,
+    fetch_all_activities,
+    fetch_athlete_clubs,
+)
 
 SAMPLE_ACTIVITIES = [{"id": 1, "name": "Morning Run"}, {"id": 2, "name": "Evening Run"}]
 
@@ -100,3 +106,46 @@ async def test_fetch_all_activities_stops_after_single_full_page_followed_by_emp
     result = await fetch_all_activities("my-token")
     assert result == full_page
     assert len(respx_mock.calls) == 2
+
+
+# ---------------------------------------------------------------------------
+# fetch_athlete_clubs
+# ---------------------------------------------------------------------------
+
+SAMPLE_CLUBS = [{"id": 10, "name": "Running Club"}, {"id": 20, "name": "Trail Runners"}]
+
+
+async def test_fetch_athlete_clubs_returns_club_list(respx_mock):
+    respx_mock.get(STRAVA_CLUBS_URL).mock(return_value=httpx.Response(200, json=SAMPLE_CLUBS))
+    result = await fetch_athlete_clubs("my-token")
+    assert result == SAMPLE_CLUBS
+
+
+async def test_fetch_athlete_clubs_returns_empty_list(respx_mock):
+    respx_mock.get(STRAVA_CLUBS_URL).mock(return_value=httpx.Response(200, json=[]))
+    result = await fetch_athlete_clubs("my-token")
+    assert result == []
+
+
+async def test_fetch_athlete_clubs_sends_per_page_200(respx_mock):
+    respx_mock.get(STRAVA_CLUBS_URL).mock(return_value=httpx.Response(200, json=[]))
+    await fetch_athlete_clubs("my-token")
+    assert respx_mock.calls.last.request.url.params["per_page"] == "200"
+
+
+async def test_fetch_athlete_clubs_raises_unauthorized_on_401(respx_mock):
+    respx_mock.get(STRAVA_CLUBS_URL).mock(return_value=httpx.Response(401))
+    with pytest.raises(StravaUnauthorizedError):
+        await fetch_athlete_clubs("bad-token")
+
+
+async def test_fetch_athlete_clubs_raises_api_error_on_500(respx_mock):
+    respx_mock.get(STRAVA_CLUBS_URL).mock(return_value=httpx.Response(500))
+    with pytest.raises(StravaAPIError):
+        await fetch_athlete_clubs("my-token")
+
+
+async def test_fetch_athlete_clubs_raises_api_error_on_network_error(respx_mock):
+    respx_mock.get(STRAVA_CLUBS_URL).mock(side_effect=httpx.ConnectError("refused"))
+    with pytest.raises(StravaAPIError):
+        await fetch_athlete_clubs("my-token")

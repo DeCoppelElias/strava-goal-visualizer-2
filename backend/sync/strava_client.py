@@ -8,6 +8,7 @@ from backend.sync.exceptions import StravaAPIError, StravaUnauthorizedError
 logger = logging.getLogger(__name__)
 
 STRAVA_ACTIVITIES_URL = "https://www.strava.com/api/v3/athlete/activities"
+STRAVA_CLUBS_URL = "https://www.strava.com/api/v3/athlete/clubs"
 
 
 async def fetch_activities(
@@ -39,6 +40,27 @@ async def fetch_activities(
             return response.json()  # type: ignore[no-any-return]
     except httpx.RequestError as exc:
         raise StravaAPIError(f"Network error fetching Strava activities: {exc}") from exc
+
+
+async def fetch_athlete_clubs(access_token: str) -> list[dict[str, Any]]:
+    # per_page=200 covers any realistic user; Strava caps clubs per page at 200
+    logger.info("Fetching Strava athlete clubs")
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                STRAVA_CLUBS_URL,
+                headers={"Authorization": f"Bearer {access_token}"},
+                params={"per_page": 200},
+            )
+            if response.status_code == 401:
+                raise StravaUnauthorizedError("Strava returned 401 — token invalid or expired")
+            try:
+                response.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                raise StravaAPIError(f"Strava API error: {exc}") from exc
+            return response.json()  # type: ignore[no-any-return]
+    except httpx.RequestError as exc:
+        raise StravaAPIError(f"Network error fetching Strava clubs: {exc}") from exc
 
 
 async def fetch_all_activities(
