@@ -1191,7 +1191,9 @@ _Generated: May 2, 2026_
 
 ---
 
-#### TASK-6.2
+#### TASK-6.2 ✅
+
+Potentially think about whether syncing should immediatly remove all current memberships, so club membership stays accurate after every sync.
 
 **Name:** Fetch and store club memberships during sync
 
@@ -1211,6 +1213,30 @@ _Generated: May 2, 2026_
 **Complexity:** Small
 
 **Testability:** After sync, `club_memberships` table contains rows matching the user's Strava clubs. Running sync twice produces no duplicates.
+
+---
+
+#### TASK-6.2.1 _(ad-hoc)_
+
+**Name:** Set up integration test database infrastructure
+
+**Goal:** Provide pytest fixtures that spin up a real PostgreSQL container via testcontainers and expose a per-test async session with automatic rollback. Replace the current mock-based `db.execute.call_count` assertions in `test_sync_service.py` with proper integration tests that verify actual DB state.
+
+**Context:** The current sync service tests mock `db.execute` and only count how many times it was called, which does not verify that the correct SQL ran or that data landed in the right columns. A real test DB enables assertions like "after `_sync_clubs`, the `club_memberships` table contains exactly these rows." This infrastructure will be used by all future data-access tests.
+
+**Input:** Existing test suite. Docker (already a project dependency).
+
+**Output:**
+- `testcontainers[postgresql]` added to dev dependencies in `pyproject.toml`
+- `tests/conftest.py` — three session/function-scoped async fixtures: `postgres_container`, `async_engine` (creates all tables once), `db` (yields `AsyncSession`, rolls back after each test)
+- `tests/backend/sync/test_sync_service.py` — `test_sync_clubs_*` tests rewritten as integration tests asserting real DB row state; mock-counting tests removed
+- All existing tests continue to pass
+
+**Dependencies:** TASK-6.2
+
+**Complexity:** Small
+
+**Testability:** `uv run pytest tests/backend/sync/test_sync_service.py -k "clubs" -v` passes without a running local DB (testcontainers starts one automatically).
 
 ---
 
