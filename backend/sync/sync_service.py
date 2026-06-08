@@ -1,16 +1,16 @@
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.auth.strava_oauth_service import StravaOAuthService
 from backend.shared.config import settings
-from backend.shared.models import Activity, SyncState
+from backend.shared.models import Activity, Club, ClubMembership, SyncState
 from backend.sync.exceptions import SyncCooldownError
 from backend.sync.schemas import SyncResponse
-from backend.sync.strava_client import fetch_all_activities
+from backend.sync.strava_client import fetch_all_activities, fetch_athlete_clubs
 
 COOLDOWN_SECONDS = settings.sync_cooldown_seconds
 
@@ -31,6 +31,7 @@ class SyncService:
         runs = [a for a in raw if a.get("sport_type") == "Run"]
         if runs:
             await self._upsert_activities(db, user_id, runs)
+        await self._sync_clubs(db, user_id, access_token)
         now = datetime.now(UTC)
         await self._upsert_sync_state(db, user_id, now)
         return SyncResponse(synced_activities=len(runs), last_sync_completed_at=now)
@@ -74,6 +75,30 @@ class SyncService:
             },
         )
         await db.execute(stmt)
+
+    async def _sync_clubs(self, db: AsyncSession, user_id: int, access_token: str) -> None:
+        raw_clubs = await fetch_athlete_clubs(access_token)
+        now = datetime.now(UTC)
+
+        if raw_clubs:
+            club_rows = [{"id": c["id"], "name": c["name"], "updated_at": now} for c in raw_clubs]
+            club_stmt = insert(Club).values(club_rows)
+            club_stmt = club_stmt.on_conflict_do_update(
+                index_elements=["id"],
+                set_={
+                    "name": club_stmt.excluded.name,
+                    "updated_at": club_stmt.excluded.updated_at,
+                },
+            )
+            await db.execute(club_stmt)
+
+        await db.execute(delete(ClubMembership).where(ClubMembership.user_id == user_id))
+
+        if raw_clubs:
+            membership_rows = [
+                {"user_id": user_id, "club_id": c["id"], "synced_at": now} for c in raw_clubs
+            ]
+            await db.execute(insert(ClubMembership).values(membership_rows))
 
     async def _upsert_sync_state(
         self, db: AsyncSession, user_id: int, completed_at: datetime

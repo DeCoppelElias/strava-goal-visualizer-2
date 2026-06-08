@@ -80,7 +80,10 @@ async def test_run_sync_returns_zero_count_when_no_activities():
     svc = _make_service()
     db = _make_db_no_state()
 
-    with patch("backend.sync.sync_service.fetch_all_activities", AsyncMock(return_value=[])):
+    with (
+        patch("backend.sync.sync_service.fetch_all_activities", AsyncMock(return_value=[])),
+        patch("backend.sync.sync_service.fetch_athlete_clubs", AsyncMock(return_value=[])),
+    ):
         result = await svc.run_sync(db, user_id=1)
 
     assert result.synced_activities == 0
@@ -117,7 +120,10 @@ async def test_run_sync_counts_only_run_activities():
         },
     ]
 
-    with patch("backend.sync.sync_service.fetch_all_activities", AsyncMock(return_value=mixed)):
+    with (
+        patch("backend.sync.sync_service.fetch_all_activities", AsyncMock(return_value=mixed)),
+        patch("backend.sync.sync_service.fetch_athlete_clubs", AsyncMock(return_value=[])),
+    ):
         result = await svc.run_sync(db, user_id=1)
 
     assert result.synced_activities == 2
@@ -138,8 +144,9 @@ async def test_run_sync_returns_zero_when_all_non_run():
         }
     ]
 
-    with patch(
-        "backend.sync.sync_service.fetch_all_activities", AsyncMock(return_value=activities)
+    with (
+        patch("backend.sync.sync_service.fetch_all_activities", AsyncMock(return_value=activities)),
+        patch("backend.sync.sync_service.fetch_athlete_clubs", AsyncMock(return_value=[])),
     ):
         result = await svc.run_sync(db, user_id=1)
 
@@ -188,3 +195,46 @@ async def test_run_sync_propagates_token_refresh_error():
 
     with pytest.raises(TokenRefreshError):
         await svc.run_sync(db, user_id=1)
+
+
+# ---------------------------------------------------------------------------
+# SyncService._sync_clubs
+# ---------------------------------------------------------------------------
+
+
+async def test_sync_clubs_deletes_memberships_even_when_no_clubs():
+    """Delete memberships regardless of how many clubs are returned."""
+    svc = _make_service()
+    db = AsyncMock()
+
+    with patch("backend.sync.sync_service.fetch_athlete_clubs", AsyncMock(return_value=[])):
+        await svc._sync_clubs(db, user_id=1, access_token="token")  # noqa: S106
+
+    # Only one db.execute call: the DELETE
+    assert db.execute.call_count == 1
+
+
+async def test_sync_clubs_upserts_clubs_and_inserts_memberships():
+    """Non-empty clubs → three db.execute calls: upsert clubs, delete memberships, insert."""
+    svc = _make_service()
+    db = AsyncMock()
+    clubs = [{"id": 10, "name": "Club A"}, {"id": 20, "name": "Club B"}]
+
+    with patch("backend.sync.sync_service.fetch_athlete_clubs", AsyncMock(return_value=clubs)):
+        await svc._sync_clubs(db, user_id=1, access_token="token")  # noqa: S106
+
+    assert db.execute.call_count == 3
+
+
+async def test_run_sync_calls_sync_clubs_with_access_token():
+    """run_sync passes the resolved access token to _sync_clubs."""
+    svc = _make_service()  # mock_oauth returns "test-token"
+    db = _make_db_no_state()
+
+    with (
+        patch("backend.sync.sync_service.fetch_all_activities", AsyncMock(return_value=[])),
+        patch.object(svc, "_sync_clubs", AsyncMock()) as mock_sync_clubs,
+    ):
+        await svc.run_sync(db, user_id=1)
+
+    mock_sync_clubs.assert_called_once_with(db, 1, "test-token")
