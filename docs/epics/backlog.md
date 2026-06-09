@@ -4,6 +4,12 @@ _Generated: May 2, 2026_
 
 ---
 
+## Testing Convention
+
+Data-access tasks are verified with integration tests against a real PostgreSQL via the `db` fixture in `tests/conftest.py` (introduced in TASK-6.2.1). Testability criteria below that read like "after sync, the table contains…" assume this harness — assert on real row state, not mock call counts.
+
+---
+
 ## EPICS
 
 ---
@@ -1216,7 +1222,7 @@ Potentially think about whether syncing should immediatly remove all current mem
 
 ---
 
-#### TASK-6.2.1 _(ad-hoc)_
+#### TASK-6.2.1 ✅
 
 **Name:** Set up integration test database infrastructure
 

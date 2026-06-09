@@ -126,6 +126,7 @@ async def oauth_authorize(...) -> AuthorizeResponse:
 - **ORM models:** `backend/shared/models.py` — SQLAlchemy declarative models
 - **Rate limiter:** `backend/shared/rate_limit.py` — shared `limiter` singleton (registered on `app.state`)
 - **Migrations:** `backend/db/migrations/versions/` — Alembic migration files
+- **Test fixtures:** `tests/conftest.py` — session-scoped Postgres container + per-test `db` `AsyncSession` for integration tests
 
 ## Key Design Constraints
 
@@ -135,6 +136,16 @@ async def oauth_authorize(...) -> AuthorizeResponse:
 - Session cookies: `HttpOnly`, `Secure`, `SameSite=Lax`; rotated on every login
 - CORS: strict allowlist to `settings.frontend_origin` only
 - **DB access:** Use the ORM for all CRUD on modelled tables — `db.add()` for inserts, `db.execute(select(...))` + `.scalar_one_or_none()` for reads, `db.delete(obj)` for deletes. Reserve `text()` for complex aggregates or window functions only
+
+---
+
+## Testing Convention
+
+Data-access logic is verified with **integration tests against a real PostgreSQL**, not mocks. A throwaway Postgres starts automatically via `testcontainers` (Docker must be running); use the `db` fixture in `tests/conftest.py` to get a per-test `AsyncSession` against a fresh schema.
+
+- **Write an integration test** (use the `db` fixture) whenever the code emits SQL: Core DML (`insert`/`delete`/`on_conflict_*`), ORM persistence (`db.add` + flush), or aggregate/window queries. Assert on **actual row state read back from the DB** — never on `db.execute.call_count`.
+- **A mock-based unit test is appropriate** only for pure logic with no SQL semantics (e.g. cooldown math, the `sport_type == "Run"` filter).
+- The container starts once per test session; each test gets an isolated schema, so tests need no manual cleanup.
 
 ---
 
@@ -243,3 +254,4 @@ make pre-commit-run  # run all pre-commit hooks against all files
 - **Workflow rules:** `docs/workflow.md`
 - **Front-end style** `docs/design/style.md`
 - **Env var schema:** `.env.example`
+- **Test DB harness:** `tests/conftest.py`

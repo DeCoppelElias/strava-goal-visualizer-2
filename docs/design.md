@@ -120,6 +120,16 @@ All database access uses the SQLAlchemy async ORM. The following conventions app
 
 ---
 
+### 6.0.5 Testing Strategy
+
+Data-access code is verified with **integration tests against a real PostgreSQL**, started on demand via `testcontainers` (see `tests/conftest.py`). A real database is required, not a convenience: the sync engine uses PostgreSQL-specific DML — `insert(...).on_conflict_do_update(...)`, set-based `delete(...).where(...)` — plus `BigInteger`/`Numeric`/timezone-aware columns. These cannot be faithfully mocked or emulated on SQLite, so a mock that only counts `db.execute` calls proves nothing about the SQL that actually runs.
+
+**Fixture model:** a session-scoped, synchronous `postgres_container` fixture starts one throwaway Postgres for the test session; a function-scoped async `db` fixture builds an asyncpg engine, creates the full schema, yields an `AsyncSession`, and drops the schema afterwards. Each test runs against a pristine schema on its own event loop — no shared state and no global event-loop configuration.
+
+**When to use which:** write an integration test (assert on rows read back from the database) for anything that emits SQL — Core DML, ORM persistence, or aggregates. Reserve mock-based unit tests for pure logic with no database semantics (cooldown timing, activity-type filtering). Prefer asserting outcomes (the row that landed) over intent (the object handed to the session).
+
+---
+
 ## 6. Architecture
 
 ### 6.1 Frontend (Streamlit)
