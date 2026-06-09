@@ -212,30 +212,6 @@ async def test_run_sync_propagates_token_refresh_error():
 # ---------------------------------------------------------------------------
 
 
-async def test_sync_clubs_deletes_memberships_even_when_no_clubs():
-    """Delete memberships regardless of how many clubs are returned."""
-    svc = _make_service()
-    db = AsyncMock()
-
-    with patch("backend.sync.sync_service.fetch_athlete_clubs", AsyncMock(return_value=[])):
-        await svc._sync_clubs(db, user_id=1, access_token="token")  # noqa: S106
-
-    # Only one db.execute call: the DELETE
-    assert db.execute.call_count == 1
-
-
-async def test_sync_clubs_upserts_clubs_and_inserts_memberships():
-    """Non-empty clubs → three db.execute calls: upsert clubs, delete memberships, insert."""
-    svc = _make_service()
-    db = AsyncMock()
-    clubs = [{"id": 10, "name": "Club A"}, {"id": 20, "name": "Club B"}]
-
-    with patch("backend.sync.sync_service.fetch_athlete_clubs", AsyncMock(return_value=clubs)):
-        await svc._sync_clubs(db, user_id=1, access_token="token")  # noqa: S106
-
-    assert db.execute.call_count == 3
-
-
 async def test_run_sync_calls_sync_clubs_with_access_token():
     """run_sync passes the resolved access token to _sync_clubs."""
     svc = _make_service()  # mock_oauth returns "test-token"
@@ -278,3 +254,75 @@ async def test_sync_clubs_inserts_clubs_and_memberships(db: AsyncSession) -> Non
         .all()
     )
     assert membership_ids == [10, 20]
+
+
+async def test_sync_clubs_removes_memberships_when_no_clubs(db: AsyncSession) -> None:
+    user = await seed_user(db)
+    svc = _make_service()
+
+    with patch(
+        "backend.sync.sync_service.fetch_athlete_clubs",
+        AsyncMock(return_value=[{"id": 10, "name": "Club A"}]),
+    ):
+        await svc._sync_clubs(db, user.id, "token")
+
+    with patch("backend.sync.sync_service.fetch_athlete_clubs", AsyncMock(return_value=[])):
+        await svc._sync_clubs(db, user.id, "token")
+
+    remaining = (
+        (await db.execute(select(ClubMembership).where(ClubMembership.user_id == user.id)))
+        .scalars()
+        .all()
+    )
+    assert remaining == []
+
+
+async def test_sync_clubs_replaces_membership_set(db: AsyncSession) -> None:
+    user = await seed_user(db)
+    svc = _make_service()
+
+    with patch(
+        "backend.sync.sync_service.fetch_athlete_clubs",
+        AsyncMock(return_value=[{"id": 10, "name": "A"}, {"id": 20, "name": "B"}]),
+    ):
+        await svc._sync_clubs(db, user.id, "token")
+
+    with patch(
+        "backend.sync.sync_service.fetch_athlete_clubs",
+        AsyncMock(return_value=[{"id": 20, "name": "B"}, {"id": 30, "name": "C"}]),
+    ):
+        await svc._sync_clubs(db, user.id, "token")
+
+    membership_ids = (
+        (
+            await db.execute(
+                select(ClubMembership.club_id)
+                .where(ClubMembership.user_id == user.id)
+                .order_by(ClubMembership.club_id)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert membership_ids == [20, 30]
+
+
+async def test_sync_clubs_upserts_club_name(db: AsyncSession) -> None:
+    user = await seed_user(db)
+    svc = _make_service()
+
+    with patch(
+        "backend.sync.sync_service.fetch_athlete_clubs",
+        AsyncMock(return_value=[{"id": 10, "name": "Old Name"}]),
+    ):
+        await svc._sync_clubs(db, user.id, "token")
+
+    with patch(
+        "backend.sync.sync_service.fetch_athlete_clubs",
+        AsyncMock(return_value=[{"id": 10, "name": "New Name"}]),
+    ):
+        await svc._sync_clubs(db, user.id, "token")
+
+    clubs = (await db.execute(select(Club).where(Club.id == 10))).scalars().all()
+    assert len(clubs) == 1
+    assert clubs[0].name == "New Name"

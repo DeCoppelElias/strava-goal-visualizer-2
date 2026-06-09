@@ -3,12 +3,15 @@ from collections.abc import AsyncGenerator, Generator
 
 import pytest
 import pytest_asyncio
+from backend.shared.models import Base
 from cryptography.fernet import Fernet
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from testcontainers.postgres import PostgresContainer
 
-# Set required env vars BEFORE importing any backend module: backend.shared.config
-# calls sys.exit(1) at import time if any are missing, and there is no .env in CI.
+# Set required env vars during conftest import — before any test module imports a
+# backend module that pulls in backend.shared.config, which calls sys.exit(1) at
+# import time if they are missing (and there is no .env in CI). Importing Base above
+# is safe: backend.shared.models does not import config.
 os.environ.setdefault("FRONTEND_ORIGIN", "http://localhost:5173")
 os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://x:x@localhost/x")
 os.environ.setdefault("TOKEN_ENCRYPTION_KEY", Fernet.generate_key().decode())
@@ -16,8 +19,6 @@ os.environ.setdefault("STRAVA_CLIENT_ID", "test-client-id")
 os.environ.setdefault("STRAVA_CLIENT_SECRET", "test-client-secret")
 os.environ.setdefault("STRAVA_REDIRECT_URI", "http://localhost:8000/oauth/callback")
 os.environ.setdefault("SESSION_SECRET_KEY", "test-session-secret")
-
-from backend.shared.models import Base  # noqa: E402  (must follow env setup above)
 
 
 @pytest.fixture(scope="session")
