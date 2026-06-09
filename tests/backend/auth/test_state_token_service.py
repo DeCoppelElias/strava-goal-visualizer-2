@@ -17,6 +17,7 @@ def _mock_db_with_token(token_obj: OAuthStateToken | None) -> AsyncMock:
 @pytest.mark.asyncio
 async def test_create_state_token_stores_token_and_expiration():
     db = AsyncMock()
+    db.add = MagicMock()  # AsyncSession.add is synchronous; not a coroutine
     before = datetime.now(UTC)
 
     service = StateTokenService()

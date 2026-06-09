@@ -83,6 +83,7 @@ def _make_db_no_state() -> AsyncMock:
     mock_result.scalar_one_or_none.return_value = None
     db = AsyncMock()
     db.execute = AsyncMock(return_value=mock_result)
+    db.add = MagicMock()  # AsyncSession.add is synchronous; not a coroutine
     return db
 
 
@@ -169,6 +170,7 @@ async def test_upsert_sync_state_inserts_when_no_existing_state():
     mock_result.scalar_one_or_none.return_value = None
     db = AsyncMock()
     db.execute = AsyncMock(return_value=mock_result)
+    db.add = MagicMock()  # AsyncSession.add is synchronous; not a coroutine
 
     now = datetime.now(UTC)
     await svc._upsert_sync_state(db, user_id=1, completed_at=now)
