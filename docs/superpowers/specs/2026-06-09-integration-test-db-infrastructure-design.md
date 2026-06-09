@@ -149,6 +149,35 @@ correctness and converting them is out of scope.
 Add `testcontainers[postgres]` to the `dev` dependency group. **No** `asyncio_*`
 loop-scope settings. Verify the extra name resolves during `uv sync`.
 
+### 5. Documentation — establish this as the standard
+
+So the harness is reused (not reinvented) by TASK-6.3, TASK-6.4, and EPIC-7, three docs
+are updated to make real-DB integration testing the documented convention:
+
+- **`CLAUDE.md`** — add a short **Testing Convention** subsection (place it after
+  "Key Design Constraints"): data-access logic — anything emitting SQL via Core DML
+  (`insert`/`delete`/`on_conflict_*`), ORM persistence (`db.add` + flush), or
+  aggregates — **must** have integration tests against a real Postgres using the `db`
+  fixture in `tests/conftest.py`; pure logic/branching (cooldown math, the run-filter)
+  may stay mock-based. Note the container starts automatically (Docker must be
+  running). Also add `tests/conftest.py` to the **Key Files** list and a bullet under
+  **Where to Find Things**.
+- **`docs/design.md`** — add a new **§6.0.5 Testing Strategy** subsection immediately
+  after §6.0.4 (Database Access Pattern). Content: why a real Postgres is required
+  (Postgres-specific DML cannot be faithfully mocked or run on SQLite — see the
+  `_sync_clubs` vs `_upsert_sync_state` contrast); the testcontainers approach; the
+  fixture model (session-scoped synchronous container + function-scoped async `db`,
+  fresh schema per test, no global loop-scope config); and the integration-vs-unit
+  guideline (assert *outcomes* — query the table — for data access; mock only pure
+  logic). Follow the existing 6.0.x heading style.
+- **`docs/epics/backlog.md`** — add a brief **Testing Convention** note near the top
+  (after the `_Generated_` line, before `## EPICS`) stating that data-access tasks use
+  the integration DB harness introduced in TASK-6.2.1, so future tasks' testability
+  criteria can assume a real `db` fixture.
+
+These three edits are deliverables of this task, kept in the same commit as the
+infrastructure they describe.
+
 ## Implementation order
 
 1. **Spike (de-risk first):** add the dep, write a throwaway one-test conftest that
@@ -157,6 +186,8 @@ loop-scope settings. Verify the extra name resolves during `uv sync`.
 2. Build `tests/conftest.py` (env shim + `postgres_container` + `db`).
 3. Rewrite the club tests with `seed_user` + real assertions.
 4. Remove the spike scaffolding.
+5. Update `CLAUDE.md`, `docs/design.md` (§6.0.5), and `docs/epics/backlog.md` to
+   document the convention.
 
 ## Verification
 
@@ -164,9 +195,13 @@ loop-scope settings. Verify the extra name resolves during `uv sync`.
   local DB running** (testcontainers starts one; Docker must be running).
 - Full suite `uv run pytest` still green (existing tests unaffected).
 - First run pulls `postgres:16-alpine` (~30–60s one-time) and starts the Ryuk reaper.
+- `CLAUDE.md`, `docs/design.md`, and `docs/epics/backlog.md` updated and internally
+  consistent with the implemented fixtures (fixture names and the Docker-must-be-
+  running caveat match the code).
 
 ## Out of scope
 
 - CI `services:` / explicit Docker wiring (ubuntu runners already provide Docker).
-- Converting non-club sync tests to integration tests.
+- Converting non-club sync tests to integration tests (`_upsert_activities` and
+  `_upsert_sync_state` are noted as future follow-ups, not done here).
 - Any change to `sync_service.py` production code.
