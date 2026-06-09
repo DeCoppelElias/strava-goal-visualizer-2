@@ -9,7 +9,7 @@ class TestCrypto:
         key = Fernet.generate_key().decode()
         crypto = Crypto(key)
 
-        token = "secret_strava_refresh_token"  # noqa: S105
+        token = "secret_strava_refresh_token"
 
         # Act
         encrypted = crypto.encrypt(token)
@@ -23,7 +23,7 @@ class TestCrypto:
         key = Fernet.generate_key().decode()
         crypto = Crypto(key)
 
-        token = "secret_strava_refresh_token"  # noqa: S105
+        token = "secret_strava_refresh_token"
 
         # Act
         encrypted = crypto.encrypt(token)
@@ -66,7 +66,7 @@ class TestCrypto:
         key = Fernet.generate_key().decode()
         crypto = Crypto(key)
 
-        token = "same_token"  # noqa: S105
+        token = "same_token"
 
         # Act
         encrypted_1 = crypto.encrypt(token)

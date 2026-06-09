@@ -7,9 +7,7 @@ class Crypto:
         try:
             self._fernet = Fernet(key.encode())
         except Exception as e:
-            raise RuntimeError(
-                "Invalid TOKEN_ENCRYPTION_KEY. " "Expected a valid Fernet key."
-            ) from e
+            raise RuntimeError("Invalid TOKEN_ENCRYPTION_KEY. Expected a valid Fernet key.") from e
 
     def encrypt(self, plaintext: str) -> str:
         encrypted = self._fernet.encrypt(plaintext.encode())
