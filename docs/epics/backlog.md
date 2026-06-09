@@ -1246,7 +1246,7 @@ Potentially think about whether syncing should immediatly remove all current mem
 
 ---
 
-#### TASK-6.3
+#### TASK-6.3 ✅
 
 **Name:** Implement `GET /clubs` endpoint
 

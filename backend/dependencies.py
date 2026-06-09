@@ -2,6 +2,7 @@ from fastapi import Depends
 
 from backend.auth.state_token_service import StateTokenService
 from backend.auth.strava_oauth_service import StravaOAuthService
+from backend.clubs.clubs_service import ClubsService
 from backend.dashboard.dashboard_service import DashboardService
 from backend.goals.goals_service import GoalService
 from backend.shared.config import settings
@@ -37,3 +38,7 @@ def get_goal_service() -> GoalService:
 
 def get_dashboard_service() -> DashboardService:
     return DashboardService()
+
+
+def get_clubs_service() -> ClubsService:
+    return ClubsService()

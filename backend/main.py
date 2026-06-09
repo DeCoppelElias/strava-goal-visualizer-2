@@ -15,6 +15,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from starlette.middleware.sessions import SessionMiddleware
 
 from backend.auth.router import router as auth_router
+from backend.clubs.router import router as clubs_router
 from backend.dashboard.router import router as dashboard_router
 from backend.goals.router import router as goals_router
 from backend.shared.config import settings
@@ -74,6 +75,7 @@ app.include_router(auth_router)
 app.include_router(sync_router)
 app.include_router(goals_router)
 app.include_router(dashboard_router)
+app.include_router(clubs_router)
 
 
 # ---------------------------------------------------------------------------
