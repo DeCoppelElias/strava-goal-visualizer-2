@@ -2,9 +2,11 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from backend.shared.models import SyncState
+from backend.shared.models import Club, ClubMembership, SyncState, User
 from backend.sync.exceptions import SyncCooldownError
 from backend.sync.sync_service import COOLDOWN_SECONDS, SyncService
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 def test_sync_cooldown_error_stores_retry_after_seconds():
@@ -25,6 +27,14 @@ def _make_service() -> SyncService:
     mock_oauth = MagicMock()
     mock_oauth.ensure_fresh_token = AsyncMock(return_value="test-token")
     return SyncService(mock_oauth)
+
+
+async def seed_user(db: AsyncSession, strava_athlete_id: int = 12345) -> User:
+    """Insert a User row and flush so its autoincrement id is available for FKs."""
+    user = User(strava_athlete_id=strava_athlete_id)
+    db.add(user)
+    await db.flush()
+    return user
 
 
 def _make_db_with_state(state: object) -> AsyncMock:
@@ -238,3 +248,33 @@ async def test_run_sync_calls_sync_clubs_with_access_token():
         await svc.run_sync(db, user_id=1)
 
     mock_sync_clubs.assert_called_once_with(db, 1, "test-token")
+
+
+# ---------------------------------------------------------------------------
+# SyncService._sync_clubs — integration tests (real PostgreSQL via `db` fixture)
+# ---------------------------------------------------------------------------
+
+
+async def test_sync_clubs_inserts_clubs_and_memberships(db: AsyncSession) -> None:
+    user = await seed_user(db)
+    svc = _make_service()
+    clubs = [{"id": 10, "name": "Club A"}, {"id": 20, "name": "Club B"}]
+
+    with patch("backend.sync.sync_service.fetch_athlete_clubs", AsyncMock(return_value=clubs)):
+        await svc._sync_clubs(db, user.id, "token")
+
+    club_rows = (await db.execute(select(Club).order_by(Club.id))).scalars().all()
+    assert [(c.id, c.name) for c in club_rows] == [(10, "Club A"), (20, "Club B")]
+
+    membership_ids = (
+        (
+            await db.execute(
+                select(ClubMembership.club_id)
+                .where(ClubMembership.user_id == user.id)
+                .order_by(ClubMembership.club_id)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert membership_ids == [10, 20]
