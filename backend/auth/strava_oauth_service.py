@@ -28,6 +28,13 @@ SCOPES = "activity:read_all,profile:read_all"
 _REQUIRED_SCOPES = {"activity:read_all", "profile:read_all"}
 
 
+def _build_display_name(athlete: dict[str, Any]) -> str:
+    firstname = athlete.get("firstname", "")
+    lastname = athlete.get("lastname", "")
+    last_initial = f" {lastname[0]}." if lastname else ""
+    return f"{firstname}{last_initial}".strip()
+
+
 class StravaOAuthService:
     def __init__(self, state_token_service: StateTokenService, crypto: Crypto) -> None:
         self.state_token_service = state_token_service
@@ -56,8 +63,12 @@ class StravaOAuthService:
         self._validate_scopes(scope)
         token_data = await self._exchange_code_for_tokens(code)
 
-        athlete_id: int = token_data["athlete"]["id"]
-        user = await self._upsert_user(db, athlete_id)
+        athlete = token_data["athlete"]
+        user = await self._upsert_user(
+            db,
+            strava_athlete_id=athlete["id"],
+            display_name=_build_display_name(athlete),
+        )
         await self._upsert_credentials(db, user, token_data)
 
         return user
@@ -86,15 +97,19 @@ class StravaOAuthService:
                 f"Required scopes {_REQUIRED_SCOPES} not granted; got: {granted_scope}"
             )
 
-    async def _upsert_user(self, db: AsyncSession, strava_athlete_id: int) -> User:
+    async def _upsert_user(
+        self, db: AsyncSession, strava_athlete_id: int, display_name: str
+    ) -> User:
         result = await db.execute(select(User).where(User.strava_athlete_id == strava_athlete_id))
         user = result.scalar_one_or_none()
 
         if user is None:
-            user = User(strava_athlete_id=strava_athlete_id)
+            user = User(strava_athlete_id=strava_athlete_id, display_name=display_name)
             db.add(user)
             await db.flush()
             db.add(Goal(user_id=user.id, yearly_running_goal_km=Decimal("365")))
+        else:
+            user.display_name = display_name
 
         return user
 

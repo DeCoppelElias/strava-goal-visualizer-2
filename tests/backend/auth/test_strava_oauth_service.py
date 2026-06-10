@@ -19,7 +19,7 @@ _VALID_STRAVA_TOKEN_RESPONSE = {
     "access_token": "access_abc",
     "refresh_token": "refresh_xyz",
     "expires_at": 9999999999,
-    "athlete": {"id": 11111111},
+    "athlete": {"id": 11111111, "firstname": "Test", "lastname": "User"},
     "scope": "activity:read_all,profile:read_all",
 }
 
@@ -213,7 +213,7 @@ async def test_upsert_user_creates_default_goal_for_new_user(mock_settings, mock
     db.execute.return_value = user_result
 
     service = StravaOAuthService(AsyncMock(), mock_crypto)
-    await service._upsert_user(db, strava_athlete_id=42)
+    await service._upsert_user(db, strava_athlete_id=42, display_name="")
 
     goal_calls = [c for c in db.add.call_args_list if isinstance(c.args[0], Goal)]
     assert len(goal_calls) == 1
@@ -235,7 +235,7 @@ async def test_upsert_user_does_not_create_goal_for_existing_user(mock_settings,
     db.execute.return_value = user_result
 
     service = StravaOAuthService(AsyncMock(), mock_crypto)
-    await service._upsert_user(db, strava_athlete_id=42)
+    await service._upsert_user(db, strava_athlete_id=42, display_name="")
 
     goal_calls = [c for c in db.add.call_args_list if isinstance(c.args[0], Goal)]
     assert len(goal_calls) == 0
@@ -421,3 +421,55 @@ async def test_ensure_fresh_token_raises_on_malformed_response_body(mock_setting
         pytest.raises(TokenRefreshError, match="missing expected fields"),
     ):
         await service.ensure_fresh_token(db, user_id=1)
+
+
+@pytest.mark.asyncio
+async def test_upsert_user_sets_display_name_from_firstname_and_last_initial(
+    mock_settings, mock_crypto
+):
+    db = AsyncMock()
+    db.add = MagicMock()
+    user_result = MagicMock()
+    user_result.scalar_one_or_none.return_value = None
+    db.execute.return_value = user_result
+
+    service = StravaOAuthService(AsyncMock(), mock_crypto)
+    user = await service._upsert_user(db, strava_athlete_id=42, display_name="Elias D.")
+
+    assert user.display_name == "Elias D."
+
+
+@pytest.mark.asyncio
+async def test_upsert_user_sets_display_name_without_initial_when_no_lastname(
+    mock_settings, mock_crypto
+):
+    db = AsyncMock()
+    db.add = MagicMock()
+    user_result = MagicMock()
+    user_result.scalar_one_or_none.return_value = None
+    db.execute.return_value = user_result
+
+    service = StravaOAuthService(AsyncMock(), mock_crypto)
+    user = await service._upsert_user(db, strava_athlete_id=42, display_name="Elias")
+
+    assert user.display_name == "Elias"
+
+
+@pytest.mark.asyncio
+async def test_upsert_user_updates_display_name_on_relogin(mock_settings, mock_crypto):
+    from backend.shared.models import User as UserModel
+
+    existing_user = MagicMock(spec=UserModel)
+    existing_user.id = 5
+    existing_user.strava_athlete_id = 42
+
+    db = AsyncMock()
+    db.add = MagicMock()
+    user_result = MagicMock()
+    user_result.scalar_one_or_none.return_value = existing_user
+    db.execute.return_value = user_result
+
+    service = StravaOAuthService(AsyncMock(), mock_crypto)
+    user = await service._upsert_user(db, strava_athlete_id=42, display_name="New N.")
+
+    assert user.display_name == "New N."
