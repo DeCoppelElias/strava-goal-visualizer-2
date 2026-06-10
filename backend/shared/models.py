@@ -27,6 +27,7 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     strava_athlete_id: Mapped[int] = mapped_column(BigInteger, unique=True)
+    display_name: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(_tz, default=_now)
     updated_at: Mapped[datetime] = mapped_column(_tz, default=_now, onupdate=_now)
 
