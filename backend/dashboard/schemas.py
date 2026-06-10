@@ -16,3 +16,17 @@ class PersonalDashboardResponse(BaseModel):
     expected_pct: float
     last_sync_completed_at: datetime
     daily_series: list[DailyDistancePoint]
+
+
+class MemberProgressResponse(BaseModel):
+    strava_athlete_id: int
+    display_name: str
+    distance_to_date_km: float
+    goal_km: float
+    progress_pct: float
+
+
+class ClubDashboardResponse(BaseModel):
+    club_id: int
+    club_name: str
+    members: list[MemberProgressResponse]
