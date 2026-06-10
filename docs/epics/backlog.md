@@ -138,7 +138,7 @@ Data-access tasks are verified with integration tests against a real PostgreSQL 
 
 **Included:**
 - `GET /clubs` endpoint (returns user's Strava clubs)
-- `GET /clubs/{club_id}/progress` endpoint (returns progress for app-authorized members of that club who are also members)
+- `GET /dashboard/club/{club_id}` endpoint (returns progress for app-authorized members of that club who are also members)
 - Club membership fetch from Strava API and storage
 - Club membership refresh on each sync
 - Authorization check: user must be a member of the club they query
@@ -1270,35 +1270,38 @@ Potentially think about whether syncing should immediatly remove all current mem
 
 ---
 
-#### TASK-6.4
+#### TASK-6.4 ✅
 
-**Name:** Implement `GET /clubs/{club_id}/progress` endpoint
+**Name:** Implement `GET /dashboard/club/{club_id}` endpoint
 
 **Goal:** Return per-member progress for all app-authorized members of a club, visible only to members of that club.
 
-**Context:** Core club feature. Authorization check is critical: only club members can query a club's progress.
+**Context:** Core club feature. Authorization check is critical: only club members can query a club's progress. Implemented in `DashboardService` alongside `get_personal_dashboard` for consistency.
 
-**Input:** `clubs`, `club_memberships`, `activities`, `goals` tables. Auth middleware.
+**Input:** `clubs`, `club_memberships`, `activities`, `goals`, `users` tables. Auth middleware.
 
 **Output:**
-- `backend/clubs/schemas.py` — `MemberProgressResponse(BaseModel)` with `strava_athlete_id: int`, `distance_to_date_km: float`, `goal_km: float`, `progress_pct: float`; endpoint returns `list[MemberProgressResponse]`
-- `backend/clubs/router.py` — `GET /clubs/{club_id}/progress` (30/minute) returns `list[MemberProgressResponse]`; requires `get_current_user`
+- `backend/shared/models.py` — `display_name: Mapped[str]` added to `User`
+- `backend/db/migrations/versions/0005_add_user_display_name.py` — Alembic migration
+- `backend/auth/strava_oauth_service.py` — `_build_display_name` helper; `_upsert_user` now stores `display_name` as "Firstname L."
+- `backend/dashboard/schemas.py` — `MemberProgressResponse(BaseModel)` with `strava_athlete_id: int`, `display_name: str`, `distance_to_date_km: float`, `goal_km: float`, `progress_pct: float`; `ClubDashboardResponse` with `club_id: int`, `club_name: str`, `members: list[MemberProgressResponse]`
+- `backend/dashboard/router.py` — `GET /dashboard/club/{club_id}` (30/minute) returns `ClubDashboardResponse`; requires `get_current_user`
+- `backend/dashboard/dashboard_service.py` — `get_club_dashboard` method
 - Validates that the authenticated user is a member of `club_id`; returns `403` otherwise
-- Returns list of members who are app-authorized AND members of that club:
+- Returns progress for all club members who have authorized the app:
   ```json
-  [
-    {"strava_athlete_id": ..., "distance_to_date_km": ..., "goal_km": ..., "progress_pct": ...}
-  ]
+  {"club_id": 42, "club_name": "Road Runners", "members": [
+    {"strava_athlete_id": ..., "display_name": "Alice A.", "distance_to_date_km": ..., "goal_km": ..., "progress_pct": ...}
+  ]}
   ```
-- Uses each member's own goal for their percentage
-- Filters to current-year activities per member — all stored activities are already runs, no `sport_type` filter needed at query time
-- Does NOT expose other users' tokens, raw activities, or PII beyond the above fields
+- Uses each member's own goal for their percentage; members without a goal are omitted
+- Filters to current-year activities per member
 
 **Dependencies:** TASK-6.3, TASK-5.3
 
 **Complexity:** Medium
 
-**Testability:** Two users both in same club both authorize app → User A calls `GET /clubs/{id}/progress` → sees both users' progress. User not in club returns `403`. User only in club sees only members with app authorized.
+**Testability:** Two users both in same club both authorize app → User A calls `GET /dashboard/club/{id}` → sees both users' progress. User not in club returns `403`. User only in club sees only members with app authorized.
 
 ---
 
@@ -1310,10 +1313,10 @@ Potentially think about whether syncing should immediatly remove all current mem
 
 **Context:** Second major product feature UI.
 
-**Input:** `GET /clubs`. `GET /clubs/{id}/progress`.
+**Input:** `GET /clubs`. `GET /dashboard/club/{club_id}`.
 
 **Output:**
-- `frontend/src/api/client.ts` extended with `getClubs()` and `getClubProgress(clubId: number)`
+- `frontend/src/api/client.ts` extended with `getClubs()` and `getClubDashboard(clubId: number)`
 - `frontend/src/pages/ClubsPage.tsx` — club select dropdown from `GET /clubs`; per-member progress bar list for selected club; persistent disclaimer: "This club view shows members who have connected this app. It is a progress visualization, not a competition leaderboard."; empty state: "No other members of this club have connected the app yet."; GDPR links visible
 
 **Dependencies:** TASK-6.4, TASK-2.8

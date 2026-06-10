@@ -99,7 +99,7 @@ A single `Limiter` instance from `backend/shared/rate_limit.py` is registered on
 | `PUT /goals` | 10/minute | |
 | `GET /dashboard/personal` | 30/minute | |
 | `GET /clubs` | 30/minute | |
-| `GET /clubs/{club_id}/progress` | 30/minute | |
+| `GET /dashboard/club/{club_id}` | 30/minute | |
 | `POST /privacy/export` | 5/hour | Data-heavy, sensitive |
 | `POST /privacy/delete` | 5/hour | Irreversible, sensitive |
 | `POST /strava/deauth` | 20/minute | Server-to-server webhook |
@@ -288,7 +288,7 @@ Every endpoint enforces the following rules. "Own" means the resource belongs to
 | `PUT /goals` | Authenticated athlete | Own goal only |
 | `POST /sync` | Authenticated athlete | Own athlete ID only; any other ID is rejected |
 | `GET /clubs` | Authenticated athlete | Own Strava clubs only |
-| `GET /clubs/{id}/progress` | Authenticated athlete | Must be a member of club `{id}` |
+| `GET /dashboard/club/{club_id}` | Authenticated athlete | Must be a member of club `{club_id}` |
 | `POST /privacy/export` | Authenticated athlete | Own data only |
 | `POST /privacy/delete` | Authenticated athlete | Own data only |
 | `POST /strava/deauth` | Strava server (verified by Strava signature) | — |
@@ -375,7 +375,8 @@ Required Strava scopes: `activity:read_all`, `profile:read_all`. Both must be gr
 - **Session:** `GET /session/me`, `POST /session/logout`
 - **Goals:** `GET /goals`, `PUT /goals`
 - **Sync:** `POST /sync`
-- **Clubs:** `GET /clubs`, `GET /clubs/{club_id}/progress`
+- **Clubs:** `GET /clubs`
+- **Dashboard:** `GET /dashboard/personal`, `GET /dashboard/club/{club_id}`
 - **Privacy:** `POST /privacy/export`, `POST /privacy/delete`
 - **Strava events:** `POST /strava/deauth`
 
