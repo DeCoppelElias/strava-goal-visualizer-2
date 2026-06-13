@@ -12,10 +12,12 @@ help: ## Show this help message
 # Installation
 # ---------------------------------------------------------------------------
 install: ## Install all runtime dependencies (backend + frontend)
-	$(UV) sync --group backend --group frontend
+	$(UV) sync --group backend
+	cd frontend && npm install
 
 install-dev: ## Install all dependencies including dev tooling
-	$(UV) sync --group backend --group frontend --group dev
+	$(UV) sync --group backend --group dev
+	cd frontend && npm install
 	$(MAKE) pre-commit-install
 
 # ---------------------------------------------------------------------------

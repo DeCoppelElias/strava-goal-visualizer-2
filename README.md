@@ -1,8 +1,18 @@
 # strava-goal-visualizer-2
 
-## Local Development Quickstart
+## Prerequisites
 
-**Prerequisites:** Python 3.12+, [uv](https://github.com/astral-sh/uv), PostgreSQL 16.
+- [uv](https://github.com/astral-sh/uv) — manages Python 3.12 automatically
+- [Node.js](https://nodejs.org/) 18+ — for the React frontend
+- [Docker](https://www.docker.com/) — for running PostgreSQL locally
+
+### Install uv (Windows)
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+## Local Development Quickstart
 
 ```bash
 # 1. Clone and enter the repo
@@ -11,38 +21,62 @@ cd strava-goal-visualizer-2
 
 # 2. Copy and fill in environment variables
 cp .env.example .env
-# Edit .env with your values
+# Edit .env with your Strava credentials and generated secrets
 
-# 3. Install dependencies and the project (enables 'backend.*' / 'frontend.*' imports)
-uv sync --group backend --group frontend
-# If uv is not available, use pip as a fallback:
-# .venv\Scripts\python.exe -m pip install -e .
+# 3. Install all dependencies (backend Python + frontend Node)
+make install-dev
 
-# 4. Start the backend (PowerShell)
-.venv\Scripts\uvicorn.exe backend.main:app --reload
+# 4. Start PostgreSQL
+docker compose up db -d
 
-# 5. In a separate terminal, start the frontend (PowerShell)
-.venv\Scripts\streamlit.exe run frontend/app.py
+# 5. Run database migrations
+uv run alembic upgrade head
+
+# 6. Start the backend (in one terminal)
+uv run uvicorn backend.main:app --reload --port 8000
+
+# 7. Start the frontend (in a separate terminal)
+cd frontend
+npm run dev
 ```
 
-Backend runs at http://localhost:8000. Frontend runs at http://localhost:8501.
+- Backend API: http://localhost:8000
+- Frontend: http://localhost:5173
+- Swagger docs: http://localhost:8000/docs
 
-## Docker Compose (recommended for local development)
+## Docker Compose (recommended)
 
 **Prerequisites:** Docker with Compose plugin.
 
 ```bash
 # 1. Copy and fill in environment variables
 cp .env.example .env
-# Edit .env with your Strava credentials and secrets
 
-# 2. Start all services (db, backend, frontend)
+# 2. Build and start all services (db, backend, frontend)
 docker compose up --build
 
 # 3. Verify
-curl http://localhost:8000/health      # → {"status":"ok"}
-curl http://localhost:8000/health/db   # → {"db":"ok"}
-# Streamlit: http://localhost:8501
+curl http://localhost:8000/health     # → {"status":"ok"}
+curl http://localhost:8000/health/db  # → {"db":"ok"}
+# Frontend: http://localhost:5173
 ```
 
-All services have health checks. The backend waits for PostgreSQL to be healthy before starting, and the frontend waits for the backend.
+## Generating Secret Keys
+
+Run these once and paste the output into `.env`:
+
+```bash
+# SESSION_SECRET_KEY
+python -c "import secrets; print(secrets.token_hex(32))"
+
+# TOKEN_ENCRYPTION_KEY
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+## Running Tests
+
+Docker must be running (tests spin up a throwaway Postgres via testcontainers).
+
+```bash
+make test
+```
