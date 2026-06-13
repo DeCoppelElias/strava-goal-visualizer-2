@@ -5,11 +5,16 @@ import {
   type Club,
   type ClubDashboard,
 } from '../api/client'
+import ClubPaceChart from '../components/ClubPaceChart'
+
+interface Props {
+  currentAthleteId: number
+}
 
 type ClubsStatus = 'loading' | 'error' | 'loaded'
 type DashStatus = 'idle' | 'loading' | 'error' | 'loaded'
 
-export default function ClubsPage() {
+export default function ClubsPage({ currentAthleteId }: Props) {
   const [clubs, setClubs] = useState<Club[]>([])
   const [clubsStatus, setClubsStatus] = useState<ClubsStatus>('loading')
   const [selectedClubId, setSelectedClubId] = useState<number | null>(null)
@@ -143,32 +148,37 @@ export default function ClubsPage() {
             {dashStatus === 'loaded' &&
               clubDashboard !== null &&
               clubDashboard.members.length > 0 && (
-                <div className="member-list">
-                  {clubDashboard.members.map((member) => (
-                    <div key={member.strava_athlete_id} className="member-row">
-                      <span className="member-row__name">
-                        {member.display_name}
-                      </span>
-                      <div className="member-row__bar-track">
-                        <div
-                          className="member-row__bar-fill"
-                          style={{
-                            width: `${Math.min(member.progress_pct, 100)}%`,
-                          }}
-                        />
+                <>
+                  <ClubPaceChart
+                    members={clubDashboard.members}
+                    currentAthleteId={currentAthleteId}
+                  />
+                  <div className="member-list" style={{ marginTop: 24 }}>
+                    {clubDashboard.members.map((member) => (
+                      <div key={member.strava_athlete_id} className="member-row">
+                        <span className="member-row__name">
+                          {member.display_name}
+                        </span>
+                        <div className="member-row__bar-track">
+                          <div
+                            className="member-row__bar-fill"
+                            style={{
+                              width: `${Math.min(member.progress_pct, 100)}%`,
+                            }}
+                          />
+                        </div>
+                        <span className="member-row__stats">
+                          {member.progress_pct.toFixed(1)}%
+                          {' · '}
+                          {member.distance_to_date_km.toFixed(1)}
+                          {' / '}
+                          {member.goal_km.toFixed(0)} km
+                        </span>
                       </div>
-                      <span className="member-row__stats">
-                        {member.progress_pct.toFixed(1)}%
-                        {' · '}
-                        {member.distance_to_date_km.toFixed(1)}
-                        {' / '}
-                        {member.goal_km.toFixed(0)} km
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                </>
               )}
-            {/* TASK-6.6: multi-line progress chart will be added here */}
           </div>
         </div>
       )}

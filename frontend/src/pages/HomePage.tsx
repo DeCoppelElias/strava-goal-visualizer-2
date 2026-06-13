@@ -104,7 +104,7 @@ export default function HomePage({ user, onLogout }: Props) {
         {page === 'dashboard' && (
           <DashboardPage athleteId={user.strava_athlete_id} />
         )}
-        {page === 'clubs' && <ClubsPage />}
+        {page === 'clubs' && <ClubsPage currentAthleteId={user.strava_athlete_id} />}
       </main>
       <GdprFooter />
     </div>
