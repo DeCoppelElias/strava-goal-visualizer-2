@@ -244,10 +244,29 @@ export default function DashboardPage({ athleteId: _athleteId }: Props) {
               {dashState.data.daily_series.length === 0 ? (
                 <p className="chart-empty">No runs recorded this year yet.</p>
               ) : (
-                <PaceChart
-                  dailySeries={dashState.data.daily_series}
-                  goalKm={dashState.data.goal_km}
-                />
+                <>
+                  <PaceChart
+                    dailySeries={dashState.data.daily_series}
+                    goalKm={dashState.data.goal_km}
+                  />
+                  <div className="member-row" style={{ marginTop: 16 }}>
+                    <div className="member-row__bar-track">
+                      <div
+                        className="member-row__bar-fill"
+                        style={{
+                          width: `${Math.min(dashState.data.progress_pct, 100)}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="member-row__stats">
+                      {dashState.data.progress_pct.toFixed(1)}%
+                      {' · '}
+                      {dashState.data.distance_to_date_km.toFixed(1)}
+                      {' / '}
+                      {dashState.data.goal_km.toFixed(0)} km
+                    </span>
+                  </div>
+                </>
               )}
             </div>
           </div>

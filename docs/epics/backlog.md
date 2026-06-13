@@ -176,6 +176,29 @@ Data-access tasks are verified with integration tests against a real PostgreSQL 
 
 ---
 
+#### TASK-6.7
+
+**Name:** Align personal and club chart styles
+
+**Goal:** Make the personal dashboard chart visually consistent with the club chart — same line-draw animation, a dot at the end of each club member line, and a progress bar on the personal dashboard.
+
+**Context:** TASK-6.6 delivered the club pace chart. The personal dashboard uses a different Recharts composition (`ComposedChart` + `Area`) which animates faster and looks different. The user prefers the club chart's slower line-draw feel and wants parity between the two views. All data is already available; this is frontend-only.
+
+**Input:** `frontend/src/components/PaceChart.tsx`, `frontend/src/components/ClubPaceChart.tsx`, `frontend/src/pages/DashboardPage.tsx`
+
+**Output:**
+- `frontend/src/components/PaceChart.tsx` — replace `ComposedChart` + `Area` with `LineChart` + `Line` for the actual-km series. Recharts `Line` animates as a path draw (the same animation `ClubPaceChart` uses); `Area` in `ComposedChart` animates differently, causing the speed mismatch. Y-axis stays in km. The dot + km label at the last actual data point is preserved.
+- `frontend/src/components/ClubPaceChart.tsx` — update `renderEndLabel` to also render a filled circle (`<circle>`) at the last data point of each member line, alongside the existing name text label.
+- `frontend/src/pages/DashboardPage.tsx` — add a horizontal progress bar below the pace chart card, same markup pattern as `member-row__bar-track` / `member-row__bar-fill` in `ClubsPage.tsx`. Display: bar fill at `progress_pct%`, label showing `{progress_pct.toFixed(1)}% · {distance_to_date_km.toFixed(1)} / {goal_km} km`. Data already available in `PersonalDashboard`.
+
+**Dependencies:** TASK-6.6
+
+**Complexity:** Small
+
+**Testability:** Frontend-only. Verify: personal chart line draws at the same speed as a club member line; a dot appears at the tip of each club member line; personal dashboard shows a filled progress bar with correct percentage and km values.
+
+---
+
 ### EPIC-7 — Privacy and Account Deletion
 
 **Purpose:** Provide self-service data export and full account deletion, and handle Strava's deauthorization callback with full data erasure.

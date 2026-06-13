@@ -75,7 +75,7 @@ export default function ClubPaceChart({ members, currentAthleteId }: Props) {
     }
   }
 
-  // Custom dot: renders a name label only at the last data point of each member's series
+  // Custom dot: renders a filled circle + name label at the last data point of each member's series
   function renderEndLabel(athleteId: number, displayName: string, color: string) {
     const data = memberDataMap.get(athleteId) ?? []
     const lastDay = data.length > 0 ? data[data.length - 1].day : null
@@ -85,15 +85,18 @@ export default function ClubPaceChart({ members, currentAthleteId }: Props) {
         return <circle r={0} cx={cx} cy={cy} fill="transparent" />
       }
       return (
-        <text
-          x={cx + 6}
-          y={cy + 4}
-          fontSize={11}
-          fontFamily="JetBrains Mono, monospace"
-          fill={color}
-        >
-          {displayName}
-        </text>
+        <g>
+          <circle cx={cx} cy={cy} r={4} fill={color} />
+          <text
+            x={cx + 10}
+            y={cy + 4}
+            fontSize={11}
+            fontFamily="JetBrains Mono, monospace"
+            fill={color}
+          >
+            {displayName}
+          </text>
+        </g>
       )
     }
   }

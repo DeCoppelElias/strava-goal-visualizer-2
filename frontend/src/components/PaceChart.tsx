@@ -1,8 +1,7 @@
 import {
-  Area,
   CartesianGrid,
-  ComposedChart,
   Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -51,9 +50,14 @@ function buildChartData(
     byDay.set(day, { day, pace: paceAt(day) })
   }
 
-  // Guarantee today always has a chart point so the highlight dot can render
   if (!byDay.has(todayDayOfYear)) {
     byDay.set(todayDayOfYear, { day: todayDayOfYear, pace: paceAt(todayDayOfYear) })
+  }
+
+  // Anchor the actual line at the origin so it always starts from (day 1, 0 km)
+  const day1 = byDay.get(1) ?? { day: 1, pace: paceAt(1) }
+  if (day1.actual === undefined) {
+    byDay.set(1, { ...day1, actual: 0 })
   }
 
   for (const p of dailySeries) {
@@ -124,7 +128,7 @@ export default function PaceChart({ dailySeries, goalKm, showHighlight = true }:
 
   return (
     <ResponsiveContainer width="100%" height={240}>
-      <ComposedChart data={data} margin={{ top: 20, right: 8, bottom: 0, left: 0 }}>
+      <LineChart data={data} margin={{ top: 20, right: 8, bottom: 0, left: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke={border} vertical={false} />
         <XAxis
           dataKey="day"
@@ -171,15 +175,14 @@ export default function PaceChart({ dailySeries, goalKm, showHighlight = true }:
           dot={renderPaceDot as (props: unknown) => JSX.Element}
           connectNulls
         />
-        <Area
+        <Line
           dataKey="actual"
           stroke={accent}
-          fill="transparent"
-          strokeWidth={2}
+          strokeWidth={3}
           dot={renderActualDot as (props: unknown) => JSX.Element}
           connectNulls
         />
-      </ComposedChart>
+      </LineChart>
     </ResponsiveContainer>
   )
 }
