@@ -5,12 +5,19 @@
 - [uv](https://github.com/astral-sh/uv) — manages Python 3.12 automatically
 - [Node.js](https://nodejs.org/) 18+ — for the React frontend
 - [Docker](https://www.docker.com/) — for running PostgreSQL locally
+- `make` — used for dev commands (built-in on macOS/Linux; install on Windows)
 
-### Install uv (Windows)
+### Windows: install prerequisites
 
 ```powershell
+# uv (Python manager)
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# make
+winget install GnuWin32.Make
 ```
+
+Restart your terminal after installing.
 
 ## Local Development Quickstart
 
