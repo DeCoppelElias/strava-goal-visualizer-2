@@ -102,6 +102,7 @@ export interface MemberProgress {
   distance_to_date_km: number
   goal_km: number
   progress_pct: number
+  daily_series: DailyDistancePoint[]
 }
 
 export interface ClubDashboard {
