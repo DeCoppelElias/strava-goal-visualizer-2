@@ -9,15 +9,27 @@
 
 ### Windows: install prerequisites
 
+Open **PowerShell** (not Git Bash) and run:
+
 ```powershell
 # uv (Python manager)
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 
-# make
-winget install GnuWin32.Make
+# make — pick one:
+winget install GnuWin32.Make          # requires winget (pre-installed on Windows 11)
+# or: scoop install make              # requires https://scoop.sh
+# or: choco install make              # requires https://chocolatey.org
 ```
 
 Restart your terminal after installing.
+
+#### No make? Run commands manually
+
+```powershell
+uv sync --group backend --group dev
+cd frontend; npm install; cd ..
+uv run pre-commit install --hook-type pre-commit --hook-type commit-msg
+```
 
 ## Local Development Quickstart
 
