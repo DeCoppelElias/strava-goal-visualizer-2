@@ -36,11 +36,11 @@ services:
   frontend:
     build:
       context: ./frontend
+    env_file: .env
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/index.html:/app/index.html
       - ./frontend/vite.config.ts:/app/vite.config.ts
-      - ./frontend/.env.local:/app/.env.local:ro
     ports:
       - "5173:5173"
     depends_on:
