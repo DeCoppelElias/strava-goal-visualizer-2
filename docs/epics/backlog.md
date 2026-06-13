@@ -1377,7 +1377,7 @@ Potentially think about whether syncing should immediatly remove all current mem
 
 ---
 
-#### TASK-7.1
+#### TASK-7.1 ✅
 
 **Name:** Create deletion audit log schema
 
