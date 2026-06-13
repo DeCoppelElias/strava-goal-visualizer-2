@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 from fastapi import HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.dashboard.schemas import (
@@ -116,19 +116,20 @@ class DashboardService:
         year_start = datetime(now.year, 1, 1, tzinfo=UTC)
 
         activity_result = await db.execute(
-            select(
-                Activity.user_id,
-                func.sum(Activity.distance_meters).label("total_meters"),
-            )
+            select(Activity.user_id, Activity.start_date, Activity.distance_meters)
             .where(
                 Activity.user_id.in_(member_ids),
                 Activity.start_date >= year_start,
             )
-            .group_by(Activity.user_id)
+            .order_by(Activity.start_date.asc())
         )
-        distance_by_user: dict[int, float] = {
-            row.user_id: float(row.total_meters) for row in activity_result.all()
-        }
+        all_rows = activity_result.all()
+
+        rows_by_user: dict[int, list[tuple[datetime, Decimal]]] = defaultdict(list)
+        total_meters_by_user: dict[int, float] = defaultdict(float)
+        for row in all_rows:
+            rows_by_user[row.user_id].append((row.start_date, row.distance_meters))
+            total_meters_by_user[row.user_id] += float(row.distance_meters)
 
         goals_result = await db.execute(select(Goal).where(Goal.user_id.in_(member_ids)))
         goal_by_user: dict[int, Goal] = {g.user_id: g for g in goals_result.scalars().all()}
@@ -139,8 +140,9 @@ class DashboardService:
             if goal is None:
                 continue
             goal_km = float(goal.yearly_running_goal_km)
-            distance_km = distance_by_user.get(member.id, 0.0) / 1000
+            distance_km = total_meters_by_user.get(member.id, 0.0) / 1000
             progress_pct = round(distance_km / goal_km * 100, 2)
+            daily_series = self._build_daily_series(rows_by_user.get(member.id, []))
             progress_list.append(
                 MemberProgressResponse(
                     strava_athlete_id=member.strava_athlete_id,
@@ -148,6 +150,7 @@ class DashboardService:
                     distance_to_date_km=distance_km,
                     goal_km=goal_km,
                     progress_pct=progress_pct,
+                    daily_series=daily_series,
                 )
             )
 

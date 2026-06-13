@@ -90,6 +90,7 @@ def test_get_club_dashboard_returns_200_with_club_progress():
                     distance_to_date_km=10.0,
                     goal_km=100.0,
                     progress_pct=10.0,
+                    daily_series=[],
                 )
             ],
         )

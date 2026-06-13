@@ -158,3 +158,46 @@ async def test_get_club_dashboard_raises_403_for_club_user_is_not_in(db: AsyncSe
         await svc.get_club_dashboard(db, requesting_user_id=user.id, club_id=club_b.id)
 
     assert exc_info.value.status_code == 403
+
+
+async def test_get_club_dashboard_includes_daily_series(db: AsyncSession) -> None:
+    svc = DashboardService()
+    club = await _seed_club(db, club_id=10, name="Series Club")
+    user_a = await _seed_user(db, strava_athlete_id=1000, display_name="Eve E.")
+    user_b = await _seed_user(db, strava_athlete_id=1001, display_name="Frank F.")
+    await _seed_membership(db, user_a.id, club.id)
+    await _seed_membership(db, user_b.id, club.id)
+    await _seed_goal(db, user_a.id, yearly_km=100.0)
+    await _seed_goal(db, user_b.id, yearly_km=200.0)
+    year = datetime.now(UTC).year
+    await _seed_activity(db, user_a.id, 10_000, datetime(year, 1, 5, tzinfo=UTC))
+    await _seed_activity(db, user_a.id, 5_000, datetime(year, 1, 10, tzinfo=UTC))
+    await _seed_activity(db, user_b.id, 20_000, datetime(year, 1, 10, tzinfo=UTC))
+
+    result = await svc.get_club_dashboard(db, requesting_user_id=user_a.id, club_id=club.id)
+
+    by_athlete = {m.strava_athlete_id: m for m in result.members}
+    series_a = by_athlete[1000].daily_series
+    assert len(series_a) == 2
+    assert series_a[0].date == f"{year}-01-05"
+    assert series_a[0].cumulative_km == 10.0
+    assert series_a[1].date == f"{year}-01-10"
+    assert series_a[1].cumulative_km == 15.0
+
+    series_b = by_athlete[1001].daily_series
+    assert len(series_b) == 1
+    assert series_b[0].cumulative_km == 20.0
+
+
+async def test_get_club_dashboard_empty_series_for_member_without_activities(
+    db: AsyncSession,
+) -> None:
+    svc = DashboardService()
+    club = await _seed_club(db, club_id=11, name="Ghost Club")
+    user = await _seed_user(db, strava_athlete_id=1100, display_name="Ghost G.")
+    await _seed_membership(db, user.id, club.id)
+    await _seed_goal(db, user.id, yearly_km=100.0)
+
+    result = await svc.get_club_dashboard(db, requesting_user_id=user.id, club_id=club.id)
+
+    assert result.members[0].daily_series == []

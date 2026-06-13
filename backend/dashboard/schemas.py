@@ -24,6 +24,7 @@ class MemberProgressResponse(BaseModel):
     distance_to_date_km: float
     goal_km: float
     progress_pct: float
+    daily_series: list[DailyDistancePoint]
 
 
 class ClubDashboardResponse(BaseModel):
