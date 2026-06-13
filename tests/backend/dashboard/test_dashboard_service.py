@@ -202,3 +202,46 @@ async def test_daily_series_two_runs_same_day_merged():
     assert len(result.daily_series) == 1
     assert result.daily_series[0].date == "2026-05-10"
     assert result.daily_series[0].cumulative_km == 10.0
+
+
+# ── _build_daily_series unit tests ──────────────────────────────────────────
+
+def test_build_daily_series_single_activity() -> None:
+    from decimal import Decimal
+    year = _real_datetime.now(UTC).year
+    rows = [(_real_datetime(year, 1, 5, tzinfo=UTC), Decimal("10000"))]
+    result = DashboardService._build_daily_series(rows)
+    assert len(result) == 1
+    assert result[0].date == f"{year}-01-05"
+    assert result[0].cumulative_km == 10.0
+
+
+def test_build_daily_series_accumulates_across_days() -> None:
+    from decimal import Decimal
+    year = _real_datetime.now(UTC).year
+    rows = [
+        (_real_datetime(year, 1, 5, tzinfo=UTC), Decimal("10000")),
+        (_real_datetime(year, 1, 10, tzinfo=UTC), Decimal("5000")),
+    ]
+    result = DashboardService._build_daily_series(rows)
+    assert len(result) == 2
+    assert result[0].cumulative_km == 10.0
+    assert result[1].cumulative_km == 15.0
+
+
+def test_build_daily_series_merges_same_day_activities() -> None:
+    from decimal import Decimal
+    year = _real_datetime.now(UTC).year
+    rows = [
+        (_real_datetime(year, 3, 1, 8, 0, 0, tzinfo=UTC), Decimal("5000")),
+        (_real_datetime(year, 3, 1, 17, 0, 0, tzinfo=UTC), Decimal("3000")),
+    ]
+    result = DashboardService._build_daily_series(rows)
+    assert len(result) == 1
+    assert result[0].date == f"{year}-03-01"
+    assert result[0].cumulative_km == 8.0
+
+
+def test_build_daily_series_empty_input() -> None:
+    result = DashboardService._build_daily_series([])
+    assert result == []

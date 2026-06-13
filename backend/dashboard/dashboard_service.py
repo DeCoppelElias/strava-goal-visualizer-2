@@ -1,6 +1,7 @@
 import calendar
 from collections import defaultdict
 from datetime import UTC, datetime
+from decimal import Decimal
 
 from fastapi import HTTPException
 from sqlalchemy import func, select
@@ -16,6 +17,22 @@ from backend.shared.models import Activity, Club, ClubMembership, Goal, SyncStat
 
 
 class DashboardService:
+    @staticmethod
+    def _build_daily_series(
+        rows: list[tuple[datetime, Decimal]],
+    ) -> list[DailyDistancePoint]:
+        daily_totals: dict[str, float] = defaultdict(float)
+        for start_date, distance_meters in rows:
+            date_str = start_date.date().isoformat()
+            daily_totals[date_str] += float(distance_meters)
+
+        series: list[DailyDistancePoint] = []
+        cumulative = 0.0
+        for date_str, day_meters in daily_totals.items():
+            cumulative += day_meters / 1000
+            series.append(DailyDistancePoint(date=date_str, cumulative_km=round(cumulative, 3)))
+        return series
+
     async def get_personal_dashboard(
         self, db: AsyncSession, user_id: int
     ) -> PersonalDashboardResponse:
@@ -42,20 +59,9 @@ class DashboardService:
         )
         rows = activities_result.all()
 
-        # Group by calendar date (multiple runs on the same day are merged).
-        # Rows are DB-sorted ASC so dict insertion order is chronological.
-        daily_totals: dict[str, float] = defaultdict(float)
-        for row in rows:
-            date_str = row.start_date.date().isoformat()
-            daily_totals[date_str] += float(row.distance_meters)
-
-        daily_series: list[DailyDistancePoint] = []
-        cumulative = 0.0
-        for date_str, day_meters in daily_totals.items():
-            cumulative += day_meters / 1000
-            daily_series.append(
-                DailyDistancePoint(date=date_str, cumulative_km=round(cumulative, 3))
-            )
+        daily_series = self._build_daily_series(
+            [(row.start_date, row.distance_meters) for row in rows]
+        )
 
         sum_meters = sum(float(r.distance_meters) for r in rows)
         goal_km = float(goal.yearly_running_goal_km)
