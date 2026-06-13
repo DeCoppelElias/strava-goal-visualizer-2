@@ -176,7 +176,7 @@ Data-access tasks are verified with integration tests against a real PostgreSQL 
 
 ---
 
-#### TASK-6.7
+#### TASK-6.7 ✅
 
 **Name:** Align personal and club chart styles
 
