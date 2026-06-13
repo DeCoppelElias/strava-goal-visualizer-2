@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { postSessionLogout, type SessionUser } from '../api/client'
 import GdprFooter from '../components/GdprFooter'
 import DashboardPage from './DashboardPage'
+import ClubsPage from './ClubsPage'
 import { getTheme, setTheme, type Theme } from '../theme'
 
-type Page = 'dashboard'
+type Page = 'dashboard' | 'clubs'
 
 interface Props {
   user: SessionUser
@@ -42,7 +43,7 @@ function MoonIcon() {
 }
 
 export default function HomePage({ user, onLogout }: Props) {
-  const [page] = useState<Page>('dashboard')
+  const [page, setPage] = useState<Page>('dashboard')
   const [loggingOut, setLoggingOut] = useState(false)
   const [theme, setThemeState] = useState<Theme>(getTheme)
 
@@ -68,8 +69,15 @@ export default function HomePage({ user, onLogout }: Props) {
         <div className="app-nav__links">
           <button
             className={`app-nav__link${page === 'dashboard' ? ' app-nav__link--active' : ''}`}
+            onClick={() => setPage('dashboard')}
           >
             Dashboard
+          </button>
+          <button
+            className={`app-nav__link${page === 'clubs' ? ' app-nav__link--active' : ''}`}
+            onClick={() => setPage('clubs')}
+          >
+            Clubs
           </button>
         </div>
         <div className="app-nav__actions">
@@ -93,7 +101,10 @@ export default function HomePage({ user, onLogout }: Props) {
         </div>
       </nav>
       <main className="app-main">
-        <DashboardPage athleteId={user.strava_athlete_id} />
+        {page === 'dashboard' && (
+          <DashboardPage athleteId={user.strava_athlete_id} />
+        )}
+        {page === 'clubs' && <ClubsPage />}
       </main>
       <GdprFooter />
     </div>

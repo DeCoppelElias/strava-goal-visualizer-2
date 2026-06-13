@@ -151,6 +151,29 @@ Data-access tasks are verified with integration tests against a real PostgreSQL 
 - Cross-club aggregation
 - Club-admin permission system
 
+#### TASK-6.6
+
+**Name:** Club progress chart
+
+**Goal:** Add a multi-line progress chart to the club view showing each member's cumulative running distance over the current year on a shared axis with a linear pace reference line.
+
+**Context:** Follow-up to TASK-6.5. Progress bars show current totals; the chart reveals how members' progress evolved over time. Requires backend changes to supply per-member daily series data efficiently in a single round trip.
+
+**Input:** `GET /dashboard/club/{club_id}` (to be extended). `DashboardService` in `backend/dashboard/dashboard_service.py`. `ClubsPage.tsx` from TASK-6.5.
+
+**Output:**
+- `backend/dashboard/dashboard_service.py` — extract `_build_daily_series(activities: list[Activity]) -> list[DailyDistancePoint]` private helper from `get_personal_dashboard`; `get_club_dashboard` fetches all current-year activities for all club members in a single `WHERE user_id IN (...)` query, groups by `user_id` in Python, calls `_build_daily_series` per member
+- `backend/dashboard/schemas.py` — add `daily_series: list[DailyDistancePoint]` to `MemberProgressResponse`
+- `frontend/src/api/client.ts` — add `daily_series: DailyDistancePoint[]` to `MemberProgress`
+- `frontend/src/components/ClubPaceChart.tsx` — new Recharts component: one `<Line>` per member (using `--accent` and derived palette), shared X-axis (day of year 1–365/366), Y-axis in km, linear pace reference line, legend with display names
+- `frontend/src/pages/ClubsPage.tsx` — render `<ClubPaceChart>` above the member list when `clubDashboard.members.length > 0`
+
+**Dependencies:** TASK-6.5
+
+**Complexity:** Medium
+
+**Testability:** Integration test: seed two users with known activity histories in same club → `GET /dashboard/club/{id}` returns correct `daily_series` per member with accurate cumulative values. Frontend: chart renders with one line per member; switching clubs re-renders with new data.
+
 ---
 
 ### EPIC-7 — Privacy and Account Deletion
@@ -1305,7 +1328,7 @@ Potentially think about whether syncing should immediatly remove all current mem
 
 ---
 
-#### TASK-6.5
+#### TASK-6.5 ✅
 
 **Name:** Streamlit club progress view
 

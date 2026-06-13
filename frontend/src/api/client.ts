@@ -90,3 +90,34 @@ export async function putGoal(km: number): Promise<GoalResponse> {
   if (!res.ok) throw new Error(`/goals returned ${res.status}`)
   return res.json() as Promise<GoalResponse>
 }
+
+export interface Club {
+  id: number
+  name: string
+}
+
+export interface MemberProgress {
+  strava_athlete_id: number
+  display_name: string
+  distance_to_date_km: number
+  goal_km: number
+  progress_pct: number
+}
+
+export interface ClubDashboard {
+  club_id: number
+  club_name: string
+  members: MemberProgress[]
+}
+
+export async function getClubs(): Promise<Club[]> {
+  const res = await apiFetch('/clubs')
+  if (!res.ok) throw new Error(`/clubs returned ${res.status}`)
+  return res.json() as Promise<Club[]>
+}
+
+export async function getClubDashboard(clubId: number): Promise<ClubDashboard> {
+  const res = await apiFetch(`/dashboard/club/${clubId}`)
+  if (!res.ok) throw new Error(`/dashboard/club/${clubId} returned ${res.status}`)
+  return res.json() as Promise<ClubDashboard>
+}

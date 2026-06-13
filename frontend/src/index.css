@@ -549,3 +549,72 @@ button {
   color: var(--text-3);
   letter-spacing: 0.04em;
 }
+
+/* ── Clubs Page ──────────────────────────────────────── */
+
+.clubs-page {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+.club-select {
+  width: 240px;
+  height: 34px;
+  padding: 0 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-1);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  transition: border-color 180ms ease, background 180ms ease;
+  cursor: pointer;
+}
+
+.club-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.member-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.member-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.member-row__name {
+  font-size: 14px;
+  color: var(--text-1);
+  min-width: 120px;
+  flex-shrink: 0;
+}
+
+.member-row__bar-track {
+  flex: 1;
+  height: 6px;
+  background: var(--surface-2);
+  border-radius: 100px;
+  overflow: hidden;
+}
+
+.member-row__bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 100px;
+  transition: width 300ms ease;
+}
+
+.member-row__stats {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
