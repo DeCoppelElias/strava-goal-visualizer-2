@@ -1,3 +1,4 @@
+import enum
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Optional
@@ -126,3 +127,17 @@ class ClubMembership(Base):
 
     user: Mapped["User"] = relationship(back_populates="club_memberships")
     club: Mapped["Club"] = relationship(back_populates="memberships")
+
+
+class DeletionReason(str, enum.Enum):
+    USER_INITIATED = "user_initiated"
+    STRAVA_DEAUTH = "strava_deauth"
+
+
+class DeletionEvent(Base):
+    __tablename__ = "deletion_events"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(BigInteger)
+    reason: Mapped[str] = mapped_column(Text)
+    deleted_at: Mapped[datetime] = mapped_column(_tz, default=_now)
