@@ -5,6 +5,7 @@ from backend.auth.strava_oauth_service import StravaOAuthService
 from backend.clubs.clubs_service import ClubsService
 from backend.dashboard.dashboard_service import DashboardService
 from backend.goals.goals_service import GoalService
+from backend.privacy.privacy_service import PrivacyService
 from backend.shared.config import settings
 from backend.shared.crypto import Crypto
 from backend.sync.sync_service import SyncService
@@ -42,3 +43,7 @@ def get_dashboard_service() -> DashboardService:
 
 def get_clubs_service() -> ClubsService:
     return ClubsService()
+
+
+def get_privacy_service() -> PrivacyService:
+    return PrivacyService()
