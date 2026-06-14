@@ -1499,7 +1499,7 @@ Potentially think about whether syncing should immediatly remove all current mem
 
 ---
 
-#### TASK-7.6
+#### TASK-7.6 ✅
 
 **Name:** Streamlit privacy page
 
