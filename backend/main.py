@@ -18,6 +18,7 @@ from backend.auth.router import router as auth_router
 from backend.clubs.router import router as clubs_router
 from backend.dashboard.router import router as dashboard_router
 from backend.goals.router import router as goals_router
+from backend.privacy.router import router as privacy_router
 from backend.shared.config import settings
 from backend.shared.db import engine
 from backend.shared.rate_limit import limiter
@@ -76,6 +77,7 @@ app.include_router(sync_router)
 app.include_router(goals_router)
 app.include_router(dashboard_router)
 app.include_router(clubs_router)
+app.include_router(privacy_router)
 
 
 # ---------------------------------------------------------------------------
