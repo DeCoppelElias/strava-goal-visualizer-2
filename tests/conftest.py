@@ -19,6 +19,7 @@ os.environ.setdefault("STRAVA_CLIENT_ID", "test-client-id")
 os.environ.setdefault("STRAVA_CLIENT_SECRET", "test-client-secret")
 os.environ.setdefault("STRAVA_REDIRECT_URI", "http://localhost:8000/oauth/callback")
 os.environ.setdefault("SESSION_SECRET_KEY", "test-session-secret")
+os.environ.setdefault("STRAVA_WEBHOOK_VERIFY_TOKEN", "test-verify-token")
 
 
 @pytest.fixture(scope="session")

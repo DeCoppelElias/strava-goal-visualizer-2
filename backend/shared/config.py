@@ -21,6 +21,7 @@ _REQUIRED_ENV_VARS: list[str] = [
     "STRAVA_CLIENT_SECRET",
     "STRAVA_REDIRECT_URI",
     "SESSION_SECRET_KEY",
+    "STRAVA_WEBHOOK_VERIFY_TOKEN",
 ]
 
 _missing = [v for v in _REQUIRED_ENV_VARS if not os.environ.get(v)]
@@ -38,6 +39,7 @@ class Settings:
     strava_client_secret: str
     strava_redirect_uri: str
     session_secret_key: str
+    strava_webhook_verify_token: str
     sync_cooldown_seconds: int = 600
 
 
@@ -49,5 +51,6 @@ settings = Settings(
     strava_client_secret=os.environ["STRAVA_CLIENT_SECRET"],
     strava_redirect_uri=os.environ["STRAVA_REDIRECT_URI"],
     session_secret_key=os.environ["SESSION_SECRET_KEY"],
+    strava_webhook_verify_token=os.environ["STRAVA_WEBHOOK_VERIFY_TOKEN"],
     sync_cooldown_seconds=int(os.environ.get("SYNC_COOLDOWN_SECONDS", "600")),
 )
