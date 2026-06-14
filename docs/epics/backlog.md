@@ -1450,7 +1450,7 @@ Potentially think about whether syncing should immediatly remove all current mem
 
 ---
 
-#### TASK-7.4
+#### TASK-7.4 ✅
 
 **Name:** Implement `POST /privacy/delete` endpoint
 
