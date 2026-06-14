@@ -3,9 +3,10 @@ import { postSessionLogout, type SessionUser } from '../api/client'
 import GdprFooter from '../components/GdprFooter'
 import DashboardPage from './DashboardPage'
 import ClubsPage from './ClubsPage'
+import PrivacyPage from './PrivacyPage'
 import { getTheme, setTheme, type Theme } from '../theme'
 
-type Page = 'dashboard' | 'clubs'
+type Page = 'dashboard' | 'clubs' | 'privacy'
 
 interface Props {
   user: SessionUser
@@ -105,8 +106,9 @@ export default function HomePage({ user, onLogout }: Props) {
           <DashboardPage athleteId={user.strava_athlete_id} />
         )}
         {page === 'clubs' && <ClubsPage currentAthleteId={user.strava_athlete_id} />}
+        {page === 'privacy' && <PrivacyPage onDeleteComplete={onLogout} />}
       </main>
-      <GdprFooter />
+      <GdprFooter onPrivacyClick={() => setPage('privacy')} />
     </div>
   )
 }
