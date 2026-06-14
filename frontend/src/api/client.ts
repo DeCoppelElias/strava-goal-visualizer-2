@@ -122,3 +122,29 @@ export async function getClubDashboard(clubId: number): Promise<ClubDashboard> {
   if (!res.ok) throw new Error(`/dashboard/club/${clubId} returned ${res.status}`)
   return res.json() as Promise<ClubDashboard>
 }
+
+export class PrivacyExportRateLimitedError extends Error {
+  constructor() {
+    super('Privacy export rate limited')
+    this.name = 'PrivacyExportRateLimitedError'
+  }
+}
+
+export async function postPrivacyExport(): Promise<void> {
+  const res = await apiFetch('/privacy/export', { method: 'POST' })
+  if (res.status === 429) throw new PrivacyExportRateLimitedError()
+  if (!res.ok) throw new Error(`/privacy/export returned ${res.status}`)
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'strava-export.json'
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+export async function postPrivacyDelete(): Promise<{ deleted: boolean }> {
+  const res = await apiFetch('/privacy/delete', { method: 'POST' })
+  if (!res.ok) throw new Error(`/privacy/delete returned ${res.status}`)
+  return res.json() as Promise<{ deleted: boolean }>
+}
