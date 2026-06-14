@@ -151,7 +151,7 @@ Data-access tasks are verified with integration tests against a real PostgreSQL 
 - Cross-club aggregation
 - Club-admin permission system
 
-#### TASK-6.6
+#### TASK-6.6 ✅
 
 **Name:** Club progress chart
 
@@ -1401,7 +1401,7 @@ Potentially think about whether syncing should immediatly remove all current mem
 
 ---
 
-#### TASK-7.2
+#### TASK-7.2 ✅
 
 **Name:** Implement user data deletion service
 
