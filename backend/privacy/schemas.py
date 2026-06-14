@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ExportUser(BaseModel):
@@ -42,3 +42,19 @@ class UserExportResponse(BaseModel):
 
 class DeleteResponse(BaseModel):
     deleted: bool
+
+
+class WebhookChallengeResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    hub_challenge: str = Field(alias="hub.challenge")
+
+
+class StravaWebhookPayload(BaseModel):
+    object_type: str
+    aspect_type: str
+    owner_id: int
+    updates: dict[str, str] = {}
+
+
+class DeauthResponse(BaseModel):
+    status: str = "ok"
