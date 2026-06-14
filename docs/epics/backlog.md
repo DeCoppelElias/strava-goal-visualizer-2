@@ -1472,7 +1472,7 @@ Potentially think about whether syncing should immediatly remove all current mem
 
 ---
 
-#### TASK-7.5
+#### TASK-7.5 ✅
 
 **Name:** Implement `POST /strava/deauth` endpoint
 
