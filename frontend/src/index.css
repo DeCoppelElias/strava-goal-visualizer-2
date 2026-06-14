@@ -694,3 +694,79 @@ button {
   display: flex;
   gap: 8px;
 }
+
+/* ── Legal Pages ─────────────────────────────────────── */
+
+.legal-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  animation: fade-in 200ms ease forwards;
+}
+
+.legal-main {
+  flex: 1;
+  padding: 40px 32px;
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.legal-back {
+  font-size: 13px;
+  color: var(--accent);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  align-self: flex-start;
+  margin-top: 6px;
+}
+
+.legal-back:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+
+.legal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legal-section h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.legal-section p,
+.legal-section ul {
+  font-size: 14px;
+  color: var(--text-2);
+  line-height: 1.65;
+}
+
+.legal-section a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.legal-section a:hover {
+  text-decoration: underline;
+}
+
+.legal-section strong {
+  color: var(--text-1);
+  font-weight: 600;
+}
+
+.legal-section ul {
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}

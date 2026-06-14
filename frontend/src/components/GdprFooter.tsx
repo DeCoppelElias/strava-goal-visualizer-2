@@ -5,9 +5,9 @@ interface Props {
 export default function GdprFooter({ onPrivacyClick }: Props) {
   return (
     <footer className="gdpr-footer">
-      <a href="#">Privacy Policy</a>
+      <a href="/privacy-policy">Privacy Policy</a>
       {' · '}
-      <a href="#">Terms of Service</a>
+      <a href="/terms">Terms of Service</a>
       {' · '}
       {onPrivacyClick ? (
         <button onClick={onPrivacyClick}>Data Deletion Info</button>

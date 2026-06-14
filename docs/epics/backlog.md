@@ -1519,3 +1519,59 @@ Potentially think about whether syncing should immediatly remove all current mem
 **Testability:** Click "Download My Data" → JSON file downloaded containing own activities. Click "Delete My Account" → confirm → redirected to login → all data gone from DB.
 
 ---
+
+#### TASK-7.7 ✅
+
+**Name:** Privacy Policy and Terms of Service pages
+
+**Goal:** Publish publicly accessible Privacy Policy and Terms of Service pages as React routes, and wire them into the GDPR footer. Required by Strava's API review process before expanded access can be granted.
+
+**Context:** `GdprFooter` already renders "Privacy Policy" and "Terms of Service" links pointing to `#`. This task replaces those with real routes and writes the full content for both pages. The app has no React Router — routing is done via conditional rendering in `App.tsx`. The same pattern applies here: check `window.location.pathname` before the auth check so both pages are publicly accessible without login. Vite dev server already serves `index.html` for all paths, so no server config change is needed.
+
+**Operator details:** Elias De Coppel · elias.decoppel@gmail.com · Governing law: Belgium
+
+**Input:** `frontend/src/App.tsx`, `frontend/src/components/GdprFooter.tsx`
+
+**Output:**
+
+- `frontend/src/pages/PrivacyPolicyPage.tsx` — static page with the following sections:
+  1. **Who we are** — operated by Elias De Coppel (elias.decoppel@gmail.com), individual developer
+  2. **What we collect** — Strava athlete ID; running activities (name, distance, date — only `sport_type = 'Run'`; all other activity types are discarded at ingest and never stored); yearly running goal; Strava club memberships (names and IDs); one session cookie for authentication only
+  3. **What we never collect** — OAuth tokens are encrypted at rest (Fernet) and never stored in readable form or logged; heart rate, GPS routes, power, cadence, or any health metrics; analytics or advertising cookies; any data not listed above
+  4. **Why we collect it (legal basis)** — you explicitly authorized this app via Strava OAuth; purpose is solely to visualize your running goal progress and club member progress
+  5. **How long we keep it** — until you delete your account (immediate erasure); or until you revoke app access in Strava settings (automatic erasure via deauth webhook)
+  6. **Your rights** — download all your data via the Export button on the Privacy page; delete all your data permanently via Delete Account; withdraw consent by revoking in Strava connected apps settings
+  7. **Security** — tokens encrypted at rest with Fernet; session cookies are HttpOnly, Secure, SameSite=Lax; no user data transmitted to any third party other than described below
+  8. **Third parties** — Strava Inc. only (data source and OAuth provider); no advertising networks, analytics providers, or data brokers; we do not sell, rent, or share your data
+  9. **Contact** — elias.decoppel@gmail.com
+  10. **Changes** — "Last updated" date updated on any change; continued use constitutes acceptance
+  - Page includes a "← Back to app" link (`window.history.back()`)
+
+- `frontend/src/pages/TermsPage.tsx` — static page with the following sections:
+  1. **About this service** — a personal running goal tracker reading authorized Strava data; operated by Elias De Coppel as an individual developer; not affiliated with, endorsed by, or a product of Strava Inc.; "Strava" is a registered trademark of Strava Inc.
+  2. **Eligibility** — must have a Strava account; must be old enough to consent to data processing in your country of residence
+  3. **What you authorize** — read access to activities and profile via Strava OAuth (scopes: `activity:read_all`, `profile:read_all`); revocable at any time in Strava settings, which triggers automatic data deletion
+  4. **Acceptable use** — personal use only; do not attempt to access other users' data; do not circumvent rate limits, reverse-engineer the service, or use it for any unlawful purpose
+  5. **No warranty** — provided "as-is" with no guarantee of uptime, accuracy, or fitness for any purpose; progress figures may differ from Strava's own metrics; the service may be discontinued at any time without notice
+  6. **Limitation of liability** — developer not liable for any direct, indirect, or consequential damages; as this is a free service, maximum liability is €0
+  7. **Termination** — you can delete your account and all data at any time via the Privacy page; we reserve the right to revoke access for ToS violations; we reserve the right to shut down the service permanently at any time, in which case all stored user data will be deleted
+  8. **Governing law** — laws of Belgium
+  9. **Contact and changes** — elias.decoppel@gmail.com; "Last updated" date updated on any change; continued use after changes constitutes acceptance
+  - Page includes a "← Back to app" link (`window.history.back()`)
+
+- `frontend/src/App.tsx` — add path checks at the top of the component, before the auth state check:
+  ```tsx
+  const path = window.location.pathname
+  if (path === '/privacy-policy') return <PrivacyPolicyPage />
+  if (path === '/terms') return <TermsPage />
+  ```
+
+- `frontend/src/components/GdprFooter.tsx` — replace `href="#"` on the Privacy Policy link with `href="/privacy-policy"` and on the Terms of Service link with `href="/terms"`; the "Data Deletion Info" link/button behaviour is unchanged
+
+**Dependencies:** TASK-7.6
+
+**Complexity:** Small
+
+**Testability:** Navigate directly to `/privacy-policy` without being logged in → page renders with all sections. Navigate directly to `/terms` without being logged in → page renders with all sections. Click "Privacy Policy" in the GDPR footer → navigates to `/privacy-policy`. Click "Terms of Service" in the GDPR footer → navigates to `/terms`. Click "← Back to app" → returns to previous page. Both URLs are publicly accessible (no redirect to login).
+
+---
