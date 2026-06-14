@@ -1427,7 +1427,7 @@ Potentially think about whether syncing should immediatly remove all current mem
 
 ---
 
-#### TASK-7.3
+#### TASK-7.3 ✅
 
 **Name:** Implement `POST /privacy/export` endpoint
 
