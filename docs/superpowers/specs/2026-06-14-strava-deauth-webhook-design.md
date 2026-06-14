@@ -65,7 +65,7 @@ Note: Strava sends other event types to the same URL (e.g. activity updates). Th
 
 ## GET /strava/deauth — Challenge Handler
 
-**Rate limit:** 20/minute (no auth)
+**Rate limit:** 20/minute (no auth — called once by Strava during subscription setup only)
 
 **Query parameters received from Strava:**
 - `hub.mode` — always `"subscribe"` during setup
@@ -84,7 +84,9 @@ FastAPI query param names containing `.` must be declared with `Query(alias="hub
 
 ## POST /strava/deauth — Deauth Event Handler
 
-**Rate limit:** 20/minute (no auth)
+**Rate limit:** 500/minute (no auth)
+
+Strava allows only one webhook subscription per app and sends **all** event types (activity creates/updates/deletes, athlete profile updates, deauth) to the same callback URL. Even though v1 only acts on deauth events, the endpoint will receive the full event volume for all users. 20/minute would be hit immediately on any moderately active app. 500/minute provides meaningful abuse protection while accommodating realistic Strava traffic. The primary protection against malicious POSTs is the payload filter — only valid deauth events trigger any database work.
 
 **Request body schema:** `StravaWebhookPayload`
 ```python

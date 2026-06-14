@@ -102,7 +102,8 @@ A single `Limiter` instance from `backend/shared/rate_limit.py` is registered on
 | `GET /dashboard/club/{club_id}` | 30/minute | |
 | `POST /privacy/export` | 5/hour | Data-heavy, sensitive |
 | `POST /privacy/delete` | 5/hour | Irreversible, sensitive |
-| `POST /strava/deauth` | 20/minute | Server-to-server webhook |
+| `GET /strava/deauth` | 20/minute | Subscription challenge — called once by Strava during setup |
+| `POST /strava/deauth` | 500/minute | Server-to-server webhook; receives all Strava event types, not just deauth |
 
 ### 6.0.4 Database Access Pattern
 
