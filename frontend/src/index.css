@@ -129,6 +129,18 @@ button {
   border-color: var(--border);
 }
 
+.btn--danger {
+  background: var(--danger-dim);
+  color: var(--danger);
+  border-color: var(--danger-dim);
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: var(--danger);
+  color: #fff;
+  border-color: var(--danger);
+}
+
 .btn--icon {
   background: transparent;
   color: var(--text-3);
@@ -537,6 +549,22 @@ button {
   color: var(--text-2);
 }
 
+.gdpr-footer button {
+  font-size: 12px;
+  color: var(--text-3);
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0 6px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 180ms ease;
+}
+
+.gdpr-footer button:hover {
+  color: var(--text-2);
+}
+
 /* ── Loading ─────────────────────────────────────────── */
 
 .app-loading {
@@ -617,4 +645,52 @@ button {
   color: var(--text-2);
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+/* ── Privacy Page ────────────────────────────────────── */
+
+.privacy-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.privacy-description {
+  font-size: 14px;
+  color: var(--text-2);
+}
+
+.privacy-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.privacy-feedback {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.privacy-feedback--error {
+  color: var(--danger);
+}
+
+.privacy-confirm {
+  background: var(--danger-dim);
+  border: 1px solid rgba(224, 82, 82, 0.2);
+  border-radius: 6px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.privacy-confirm__warning {
+  font-size: 14px;
+  color: var(--danger);
+}
+
+.privacy-confirm__actions {
+  display: flex;
+  gap: 8px;
 }
