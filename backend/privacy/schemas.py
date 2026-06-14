@@ -38,3 +38,7 @@ class UserExportResponse(BaseModel):
     sync_state: ExportSyncState | None
     activities: list[ExportActivity]
     club_memberships: list[ExportClubMembership]
+
+
+class DeleteResponse(BaseModel):
+    deleted: bool
