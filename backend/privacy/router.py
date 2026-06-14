@@ -48,6 +48,30 @@ async def strava_webhook_challenge(
     return WebhookChallengeResponse(hub_challenge=hub_challenge)
 
 
+@router.post("/strava/deauth", response_model=DeauthResponse)
+@limiter.limit("500/minute")
+async def strava_deauth_webhook(
+    request: Request,
+    payload: StravaWebhookPayload,
+    db: AsyncSession = Depends(get_db),  # noqa: B008
+    privacy_service: PrivacyService = Depends(get_privacy_service),  # noqa: B008
+) -> DeauthResponse:
+    if payload.object_type != "athlete" or payload.updates.get("authorized") != "false":
+        return DeauthResponse()
+
+    try:
+        result = await db.execute(select(User).where(User.strava_athlete_id == payload.owner_id))
+        user = result.scalar_one_or_none()
+        if user is None:
+            logger.warning("Strava deauth: unknown athlete %s", payload.owner_id)
+            return DeauthResponse()
+        await privacy_service.delete_user_data(db, user_id=user.id, reason=DeletionReason.STRAVA_DEAUTH)
+    except Exception as exc:
+        logger.error("Strava deauth failed for athlete %s: %s", payload.owner_id, exc)
+
+    return DeauthResponse()
+
+
 @router.post("/privacy/export")
 @limiter.limit("5/hour")
 async def export_user_data(
