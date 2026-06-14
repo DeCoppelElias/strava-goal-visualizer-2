@@ -82,6 +82,41 @@ def test_delete_returns_401_when_unauthenticated():
         app.dependency_overrides.pop(get_current_user, None)
 
 
+def test_webhook_challenge_returns_200_and_echoes_challenge():
+    from unittest.mock import patch
+
+    from backend.main import app
+
+    with patch("backend.main._run_migrations"), TestClient(app) as client:
+        response = client.get(
+            "/strava/deauth",
+            params={
+                "hub.mode": "subscribe",
+                "hub.challenge": "abc123",
+                "hub.verify_token": "test-verify-token",
+            },
+        )
+    assert response.status_code == 200
+    assert response.json() == {"hub.challenge": "abc123"}
+
+
+def test_webhook_challenge_returns_403_for_wrong_verify_token():
+    from unittest.mock import patch
+
+    from backend.main import app
+
+    with patch("backend.main._run_migrations"), TestClient(app) as client:
+        response = client.get(
+            "/strava/deauth",
+            params={
+                "hub.mode": "subscribe",
+                "hub.challenge": "abc123",
+                "hub.verify_token": "WRONG_TOKEN",
+            },
+        )
+    assert response.status_code == 403
+
+
 def test_delete_rate_limit_returns_429():
     from unittest.mock import patch
 
