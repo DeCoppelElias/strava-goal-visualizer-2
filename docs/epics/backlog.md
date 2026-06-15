@@ -1575,3 +1575,25 @@ Potentially think about whether syncing should immediatly remove all current mem
 **Testability:** Navigate directly to `/privacy-policy` without being logged in → page renders with all sections. Navigate directly to `/terms` without being logged in → page renders with all sections. Click "Privacy Policy" in the GDPR footer → navigates to `/privacy-policy`. Click "Terms of Service" in the GDPR footer → navigates to `/terms`. Click "← Back to app" → returns to previous page. Both URLs are publicly accessible (no redirect to login).
 
 ---
+
+#### TASK-7.8 _(ad-hoc)_
+
+**Name:** Move account/privacy nav into top bar; simplify footer
+
+**Goal:** Replace the "Data Deletion Info" footer link with an "Account" button in the top-right nav bar, making the data management page a first-class nav destination alongside Dashboard and Clubs. Simplify the GdprFooter to only show the two public legal links.
+
+**Context:** Currently, the data export/deletion page (`PrivacyPage`) is only reachable via "Data Deletion Info" in the GdprFooter. Standard UX convention puts account-level actions in the top-right corner. The footer should be reserved for public legal links (Privacy Policy, Terms of Service) that are always accessible regardless of auth state. The "← Back to app" button on the legal pages (`window.history.back()`) stays — it is sufficient since authenticated users land on Dashboard and unauthenticated users land on Login.
+
+**Input:** `frontend/src/pages/HomePage.tsx`, `frontend/src/components/GdprFooter.tsx`
+
+**Output:**
+- `frontend/src/pages/HomePage.tsx` — add `'account'` to the `Page` type; add an "Account" button in `app-nav__actions` (top right, before the theme toggle); render `<PrivacyPage onDeleteComplete={onLogout} />` when `page === 'account'`; remove the `onPrivacyClick` prop passed to `<GdprFooter>`
+- `frontend/src/components/GdprFooter.tsx` — remove the `onPrivacyClick` prop and the "Data Deletion Info" link entirely; footer now renders only "Privacy Policy · Terms of Service"; remove the `Props` interface (no props needed)
+
+**Dependencies:** TASK-7.6, TASK-7.7
+
+**Complexity:** Small
+
+**Testability:** Clicking "Account" in the top nav renders the data export/delete page with the nav bar visible. The GdprFooter shows only "Privacy Policy · Terms of Service" on all pages. The legal pages still render correctly and "← Back to app" still works.
+
+---
