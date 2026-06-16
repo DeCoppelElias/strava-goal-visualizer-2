@@ -1578,22 +1578,31 @@ Potentially think about whether syncing should immediatly remove all current mem
 
 #### TASK-7.8 _(ad-hoc)_
 
-**Name:** Move account/privacy nav into top bar; simplify footer
+**Name:** User icon dropdown + expose display_name in session
 
-**Goal:** Replace the "Data Deletion Info" footer link with an "Account" button in the top-right nav bar, making the data management page a first-class nav destination alongside Dashboard and Clubs. Simplify the GdprFooter to only show the two public legal links.
+**Goal:** Replace the standalone "Log out" button with a user icon in the top-right nav. Clicking it opens a dropdown showing the user's display name, an "Account" link (navigates to the privacy/data page), and "Log out". Simplify GdprFooter to only the two public legal links. Also expose `display_name` from `/session/me` so the frontend can show the user's name.
 
-**Context:** Currently, the data export/deletion page (`PrivacyPage`) is only reachable via "Data Deletion Info" in the GdprFooter. Standard UX convention puts account-level actions in the top-right corner. The footer should be reserved for public legal links (Privacy Policy, Terms of Service) that are always accessible regardless of auth state. The "← Back to app" button on the legal pages (`window.history.back()`) stays — it is sufficient since authenticated users land on Dashboard and unauthenticated users land on Login.
+**Context:** The `PrivacyPage` was only reachable via "Data Deletion Info" in the footer. The "Log out" button occupied nav space that is better used by a user icon following standard UX convention. `display_name` is already stored on the `User` model and populated at login — it just wasn't included in the session response. The "← Back to app" button on the legal pages was also changed from `window.history.back()` to navigate to `/` directly, to avoid landing on another legal page when the user has navigated between them.
 
-**Input:** `frontend/src/pages/HomePage.tsx`, `frontend/src/components/GdprFooter.tsx`
+**Input:** `backend/auth/schemas.py`, `backend/auth/router.py`, `tests/backend/auth/test_session_me.py`, `frontend/src/api/client.ts`, `frontend/src/pages/HomePage.tsx`, `frontend/src/components/GdprFooter.tsx`, `frontend/src/index.css`
 
 **Output:**
-- `frontend/src/pages/HomePage.tsx` — add `'account'` to the `Page` type; add an "Account" button in `app-nav__actions` (top right, before the theme toggle); render `<PrivacyPage onDeleteComplete={onLogout} />` when `page === 'account'`; remove the `onPrivacyClick` prop passed to `<GdprFooter>`
-- `frontend/src/components/GdprFooter.tsx` — remove the `onPrivacyClick` prop and the "Data Deletion Info" link entirely; footer now renders only "Privacy Policy · Terms of Service"; remove the `Props` interface (no props needed)
+- `backend/auth/schemas.py` — add `display_name: str` to `SessionMeResponse`
+- `backend/auth/router.py` — pass `display_name=current_user.display_name` in the `session_me` response
+- `tests/backend/auth/test_session_me.py` — assert `display_name` is present and correct in the session response test
+- `frontend/src/api/client.ts` — add `display_name: string` to `SessionUser`
+- `frontend/src/pages/HomePage.tsx` — add `'account'` to `Page` type; replace the "Log out" button with a user icon (`UserIcon` SVG) + dropdown (`user-menu`/`user-menu__panel`) containing display name, "Account" button (`setPage('account')`), and "Log out"; click-outside dismissal via `useRef` + `useEffect`; render `<PrivacyPage>` when `page === 'account'`; pass no props to `<GdprFooter>`
+- `frontend/src/components/GdprFooter.tsx` — remove `Props` interface and `onPrivacyClick`; render only "Privacy Policy · Terms of Service"
+- `frontend/src/index.css` — add `.user-menu`, `.user-menu__panel`, `.user-menu__name`, `.user-menu__item` styles; remove dead `.gdpr-footer button` styles
 
 **Dependencies:** TASK-7.6, TASK-7.7
 
-**Complexity:** Small
+**Complexity:** Small–Medium
 
-**Testability:** Clicking "Account" in the top nav renders the data export/delete page with the nav bar visible. The GdprFooter shows only "Privacy Policy · Terms of Service" on all pages. The legal pages still render correctly and "← Back to app" still works.
+**Testability:** Clicking the user icon opens a dropdown with the user's display name. Clicking "Account" navigates to the privacy/data page with the nav bar visible; dropdown closes. Clicking "Log out" triggers the logout flow. Clicking outside the dropdown closes it. GdprFooter shows only "Privacy Policy · Terms of Service". Legal pages render correctly and "← Back to app" navigates to `/`.
 
 ---
+
+Also consider meta tools, how can I as an admin know how many clubs/people are connected? How the service is doing?
+
+Also consider changing the email to a dedicated support email
