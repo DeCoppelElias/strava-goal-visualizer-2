@@ -1603,6 +1603,32 @@ Potentially think about whether syncing should immediatly remove all current mem
 
 ---
 
+#### TASK-8.1 ✅ _(ad-hoc)_
+
+**Name:** Achievement Badges
+
+**Goal:** Display four milestone achievement badges on the personal dashboard when year-to-date distance crosses 10 / 100 / 365 / 1,000 km. Badge state derives from `distance_to_date_km` — no backend changes required.
+
+**Context:** Pure frontend feature. Shield + running shoe SVG badges with progressive detail per tier. Earned badges render in tier color; unearned in `--text-3` (`#3d4358`). Design spec: `docs/superpowers/specs/2026-06-16-achievement-badges-design.md`.
+
+**Input:** `frontend/src/pages/DashboardPage.tsx`, `frontend/src/index.css`
+
+**Output:**
+- `frontend/src/components/BadgeIcon.tsx` — SVG badge component (shield + shoe, 4 tier variants)
+- `frontend/src/components/BadgeRow.tsx` — Badge row card with earned-state logic
+- `frontend/src/pages/DashboardPage.tsx` — Render `<BadgeRow>` between Stats and Pace chart cards
+- `frontend/src/index.css` — Add `.badge-row`, `.badge-item`, `.badge-item__name`, `.badge-item__threshold`
+
+**Dependencies:** TASK-5.x (personal dashboard `distance_to_date_km`)
+
+**Complexity:** Small
+
+**Testability:** Badges card visible on Dashboard, not on Clubs page. Earned badges show tier color; unearned show dark grey. All four tiers render at the correct threshold.
+
+---
+
 Also consider meta tools, how can I as an admin know how many clubs/people are connected? How the service is doing?
 
 Also consider changing the email to a dedicated support email
+
+Do a final security sweep
