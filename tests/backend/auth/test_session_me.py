@@ -91,7 +91,7 @@ async def test_session_me_returns_user_data_when_authenticated():
     from fastapi.testclient import TestClient
 
     created = datetime(2026, 1, 1, tzinfo=UTC)
-    user = User(id=1, strava_athlete_id=12345678, created_at=created)
+    user = User(id=1, strava_athlete_id=12345678, display_name="Elias D.", created_at=created)
 
     async def _return_user():
         return user
@@ -103,6 +103,7 @@ async def test_session_me_returns_user_data_when_authenticated():
         assert response.status_code == 200
         data = response.json()
         assert data["strava_athlete_id"] == 12345678
+        assert data["display_name"] == "Elias D."
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
@@ -117,7 +118,7 @@ def test_session_me_rate_limit_returns_429():
     from fastapi.testclient import TestClient
 
     created = datetime(2026, 1, 1, tzinfo=UTC)
-    user = User(id=1, strava_athlete_id=12345678, created_at=created)
+    user = User(id=1, strava_athlete_id=12345678, display_name="Elias D.", created_at=created)
 
     async def _return_user():
         return user

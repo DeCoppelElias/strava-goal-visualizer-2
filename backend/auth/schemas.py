@@ -9,6 +9,7 @@ class AuthorizeResponse(BaseModel):
 
 class SessionMeResponse(BaseModel):
     strava_athlete_id: int
+    display_name: str
     created_at: datetime
 
 

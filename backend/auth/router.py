@@ -78,6 +78,7 @@ async def session_me(
 ) -> SessionMeResponse:
     return SessionMeResponse(
         strava_athlete_id=current_user.strava_athlete_id,
+        display_name=current_user.display_name,
         created_at=current_user.created_at,
     )
 
