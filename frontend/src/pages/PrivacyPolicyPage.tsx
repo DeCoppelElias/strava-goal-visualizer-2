@@ -9,7 +9,7 @@ export default function PrivacyPolicyPage() {
             <h1 className="page-title">Privacy Policy</h1>
             <p className="page-subtitle">Last updated: June 14, 2026</p>
           </div>
-          <button className="legal-back" onClick={() => window.history.back()}>
+          <button className="legal-back" onClick={() => { window.location.href = '/' }}>
             ← Back to app
           </button>
         </div>

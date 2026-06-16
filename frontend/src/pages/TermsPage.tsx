@@ -9,7 +9,7 @@ export default function TermsPage() {
             <h1 className="page-title">Terms of Service</h1>
             <p className="page-subtitle">Last updated: June 14, 2026</p>
           </div>
-          <button className="legal-back" onClick={() => window.history.back()}>
+          <button className="legal-back" onClick={() => { window.location.href = '/' }}>
             ← Back to app
           </button>
         </div>
