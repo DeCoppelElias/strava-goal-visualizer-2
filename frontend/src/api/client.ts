@@ -13,6 +13,7 @@ async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
 
 export interface SessionUser {
   strava_athlete_id: number
+  display_name: string
   created_at: string
 }
 
