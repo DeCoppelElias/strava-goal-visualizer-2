@@ -7,6 +7,7 @@ import {
   type PersonalDashboard,
 } from '../api/client'
 import PaceChart from '../components/PaceChart'
+import BadgeRow from '../components/BadgeRow'
 
 interface Props {
   athleteId: number
@@ -234,6 +235,9 @@ export default function DashboardPage({ athleteId: _athleteId }: Props) {
               </div>
             </div>
           )}
+
+          {/* Badges card */}
+          <BadgeRow distanceKm={dashState.data.distance_to_date_km} />
 
           {/* Pace chart card */}
           <div className="card">
