@@ -5,69 +5,50 @@ interface BadgeIconProps {
   height?: number
 }
 
-const SHIELD = 'M 10,2 L 70,2 Q 78,2 78,10 L 78,56 Q 66,80 40,94 Q 14,80 2,56 L 2,10 Q 2,2 10,2 Z'
+// Shield outline (common to every tier).
+const SHIELD = 'M10,2h60q8,0,8,8v46Q66,80,40,94Q14,80,2,56v-46q0-8,8-8Z'
 
-// Outer silhouette: heel wraps around at back-bottom, thick midsole extends at toe,
-// raised toe box curves up before coming down.
-// Clockwise from heel-bottom: back wrap → up heel → over heel counter → collar →
-// upper → raised toe → toe front → midsole junction → extended sole toe →
-// sole bottom curve → back to heel.
-const SHOE = [
-  'M 12,68',           // heel bottom-left junction
-  'Q 6,68 6,58',       // heel wraps around back-bottom (extends left of upper)
-  'L 8,44',            // heel back going up
-  'Q 8,32 16,26',      // heel counter top curve
-  'Q 24,20 34,20',     // collar/ankle opening
-  'L 52,18',           // tongue top toward toe
-  'Q 62,16 66,24',     // raised toe box (curves up then down)
-  'Q 70,32 68,46',     // toe front
-  'Q 66,58 58,62',     // toe-midsole junction
-  'Q 68,62 70,66',     // midsole extends past upper at toe
-  'Q 68,72 60,72',     // toe bottom of sole
-  'Q 40,76 20,72',     // sole bottom sweep (characteristic running sole curve)
-  'Q 14,72 12,68',     // back to heel
-  'Z',
-].join(' ')
+// Per-tier group transform that positions the shoe inside the shield.
+const G_BRONZE = 'matrix(0.412515 -0.203546 0.203546 0.412515 10.257742 33.847846)'
+const G_STD = 'matrix(0.454149 0.073135 -0.073135 0.454149 18.456355 17.667223)'
 
-// Inner heel counter arc: parallels the outer heel, creates visible heel cup
-const HEEL_ARC = 'M 10,64 Q 12,44 20,34 Q 24,26 30,22'
+// Original svgrepo offset, baked into every shoe path.
+const SHOE_T = 'matrix(0.999976 -0.006868 0.006868 0.999976 -947.672 -83.403)'
 
-// Midsole panel line: runs across shoe at upper/midsole boundary (Platinum)
-const PANEL = 'M 12,62 Q 34,60 58,62'
+// Shoe silhouette (always shown).
+const BODY =
+  'M1045.338,144.05c-2.411135-2.707471-5.035551-5.217185-7.848-7.505-.869426-.648024-2.096889-.485165-2.767249.367158s-.539397,2.083597.295249,2.775842.886.7,2.269,1.943c2.83997,2.530229,5.429596,5.328151,7.733,8.355c2.562,3.432,4.441,7.256,4.41,10.357.015381,1.268765-.311408,2.518231-.946,3.617-1.563396,2.230225-4.098827,3.57859-6.822,3.628-2.29136-.086477-4.516213-.793647-6.437-2.046l-.1-.056L956.092,124.7c-.024-.016-.059-.039-.1-.071-.943-.542-4.494-3.591-4.316-6.132.005082-.661706.173392-1.311932.49-1.893l9.613-18.634c.028-.052.055-.111.155-.295c2.131119-3.723276,5.377443-6.683479,9.281-8.463.825742,4.124302,2.163431,8.129307,3.982,11.922c2.264,4.44,6.159,8.284,12,8.254c2.071791-.034681,4.122117-.426073,6.061-1.157c1.014685-.362838,1.559475-1.464356,1.232-2.491-2.82-8.839-4.166-13.052-4.806-15.059l7.564-2.776l10.07,20.947c.478279.995769,1.673231,1.415279,2.669.937s1.415279-1.673231.937-2.669l-10.856-22.583c-.445593-.929299-1.524405-1.367837-2.492-1.013l-11.07,4.062c-1.00538.369594-1.541075,1.465674-1.215,2.486.006.015.006.016,4.771,14.95-.937098.235228-1.898862.358092-2.865.366-3.972-.028-6.392-2.288-8.463-6.113-2-3.787-3.177-8.859-4.125-13.16-.12089-.54427-.463481-1.013375-.945143-1.29417s-1.05867-.347792-1.591857-.18483c-5.95079,1.900437-10.926811,6.044969-13.872,11.554l-9.588,18.579c-.609089,1.149285-.929951,2.4293-.935,3.73.143243,2.686104,1.312785,5.214564,3.267,7.063.657421.682609,1.366525,1.313481,2.121,1.887l12.028,6.396l4.951,2.555l35.777,18.462l29.151,15.066c2.079243,1.047717,4.367152,1.615337,6.695,1.661c4.082447-.04435,7.885075-2.082726,10.182-5.458l.058-.1c1.014766-1.724579,1.542842-3.692074,1.528-5.693-.08-6.122-4.21-11.845-8.097-16.288Z'
+
+// Two diagonal lace bands across the upper (Silver+).
+const BANDS =
+  'M1003.707,123.551c-.142524-.511176-.482361-.944753-.944688-1.205268s-1.009235-.326611-1.520312-.183732l-20.5,5.716c-1.064253.296577-1.686577,1.399747-1.39,2.464s1.399747,1.686577,2.464,1.39l20.5-5.717c.51132-.142108.945196-.481613,1.20609-.943757s.327413-1.009033.18491-1.520243Zm-9,15.8c.182925.000009.364976-.025229.541-.075l16.8-4.715c.687915-.193281,1.22046-.738878,1.397032-1.43127s-.029657-1.426388-.541-1.9255-1.250117-.687511-1.938032-.49423l-16.793,4.715c-.962469.269353-1.57835,1.207867-1.442411,2.198028s.981962,1.727971,1.981411,1.727972h-.005Z'
+
+// Three lace rungs (Gold+).
+const RUNGS =
+  'M1021.578,133.331c.143143.511072.483555.944292.94627,1.204252s1.009785.325343,1.52073.181748l11.728-3.293c1.0637-.298786,1.683786-1.4033,1.385-2.467s-1.4033-1.683786-2.467-1.385l-11.728,3.293c-1.063396.298546-1.683464,1.402581-1.385,2.466Zm-8.092-8.394c.298121,1.063296,1.4016,1.683751,2.465,1.386l11.729-3.293c.705001-.177876,1.257929-.724351,1.44407-1.427214s-.023832-1.45138-.548382-1.954881-1.281032-.68266-1.975688-.467905l-11.731,3.291c-1.062588.299423-1.681606,1.403182-1.383,2.466Zm-6.7-7.786c.143356.510888.483857.943868.946548,1.203627s1.009642.325005,1.520452.181373l11.73-3.292c1.035687-.320185,1.627743-1.407198,1.334948-2.450959s-1.363837-1.664243-2.414948-1.399041l-11.732,3.292c-1.06168.299874-1.680036,1.402803-1.382,2.465h-.003Z'
 
 export default function BadgeIcon({ tier, color, width = 80, height = 96 }: BadgeIconProps) {
-  const hasLaces = tier === 'silver' || tier === 'gold' || tier === 'platinum'
-  const hasTread = tier === 'gold' || tier === 'platinum'
-  const hasPanel = tier === 'platinum'
+  const hasBands = tier === 'silver' || tier === 'gold' || tier === 'platinum'
+  const hasRungs = tier === 'gold' || tier === 'platinum'
+  const isPlatinum = tier === 'platinum'
 
   return (
     <svg viewBox="0 0 80 96" width={width} height={height} xmlns="http://www.w3.org/2000/svg">
       {/* Shield */}
       <path d={SHIELD} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" />
-      {/* Shoe outer silhouette */}
-      <path d={SHOE} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      {/* Heel counter inner arc — makes back of shoe recognisable as a running heel */}
-      <path d={HEEL_ARC} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-      {/* Lace windows — Silver+: rectangular cut-outs across the upper tongue */}
-      {hasLaces && (
+      {/* Shoe */}
+      <g transform={tier === 'bronze' ? G_BRONZE : G_STD}>
+        <path d={BODY} transform={SHOE_T} fill={color} />
+        {hasBands && <path d={BANDS} transform={SHOE_T} fill={color} />}
+        {hasRungs && <path d={RUNGS} transform={SHOE_T} fill={color} />}
+      </g>
+      {/* Platinum-only lace lines */}
+      {isPlatinum && (
         <>
-          <rect x="36" y="23" width="14" height="6" rx="1" fill="none" stroke={color} strokeWidth="1.5" />
-          <rect x="38" y="31" width="14" height="6" rx="1" fill="none" stroke={color} strokeWidth="1.5" />
-          <rect x="40" y="39" width="12" height="6" rx="1" fill="none" stroke={color} strokeWidth="1.5" />
+          <line x1="8.594013" y1="0" x2="-8.592421" y2="0" transform="matrix(0.71859 0 0 1.5 16.097627 43.316379)" fill="none" stroke={color} strokeWidth="0.96" />
+          <line x1="8.592422" y1="0" x2="-8.592421" y2="0" transform="matrix(0.71859 0 0 1.5 23.273187 49.046827)" fill="none" stroke={color} strokeWidth="0.96" />
+          <line x1="8.592422" y1="0" x2="-8.592421" y2="0" transform="matrix(0.71859 0 0 1.5 30.856029 54.844126)" fill="none" stroke={color} strokeWidth="0.96" />
         </>
-      )}
-      {/* Sole tread — Gold+: short horizontal marks at heel and toe */}
-      {hasTread && (
-        <>
-          <line x1="14" y1="68" x2="20" y2="68" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-          <line x1="14" y1="71" x2="20" y2="71" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-          <line x1="56" y1="66" x2="62" y2="66" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-          <line x1="54" y1="69" x2="60" y2="69" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-        </>
-      )}
-      {/* Midsole panel line — Platinum: divides upper from midsole */}
-      {hasPanel && (
-        <path d={PANEL} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
       )}
     </svg>
   )
