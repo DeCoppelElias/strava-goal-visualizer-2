@@ -25,26 +25,16 @@ interface Props {
 
 export default function BadgeRow({ distanceKm }: Props) {
   return (
-    <div className="card">
-      <div className="card__header">
-        <span className="card__label">Badges</span>
-      </div>
-      <div className="card__body">
-        <div className="badge-row">
-          {BADGES.map((b) => {
-            const earned = distanceKm >= b.threshold
-            return (
-              <div key={b.tier} className="badge-item">
-                <BadgeIcon tier={b.tier} color={earned ? b.color : UNEARNED} />
-                <span className={`badge-item__name${earned ? '' : ' badge-item__name--unearned'}`}>
-                  {b.name}
-                </span>
-                <span className="badge-item__threshold">{b.label}</span>
-              </div>
-            )
-          })}
-        </div>
-      </div>
+    <div className="header-badges">
+      {BADGES.map((b) => {
+        const earned = distanceKm >= b.threshold
+        const label = `${b.name} — ${b.label} (${earned ? 'earned' : 'locked'})`
+        return (
+          <span key={b.tier} className="header-badges__item" title={label} aria-label={label}>
+            <BadgeIcon tier={b.tier} color={earned ? b.color : UNEARNED} width={40} height={48} />
+          </span>
+        )
+      })}
     </div>
   )
 }

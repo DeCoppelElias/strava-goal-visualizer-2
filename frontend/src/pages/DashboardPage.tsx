@@ -123,6 +123,9 @@ export default function DashboardPage({ athleteId: _athleteId }: Props) {
           <h1 className="page-title">Dashboard</h1>
           <p className="page-subtitle">{new Date().getFullYear()} · Running Goal</p>
         </div>
+        {dashState.status === 'loaded' && (
+          <BadgeRow distanceKm={dashState.data.distance_to_date_km} />
+        )}
         <div className="sync-inline">
           <button
             className="btn btn--ghost"
@@ -186,6 +189,42 @@ export default function DashboardPage({ athleteId: _athleteId }: Props) {
 
       {dashState.status === 'loaded' && (
         <>
+          {/* Pace chart card */}
+          <div className="card">
+            <div className="card__header">
+              <span className="card__label">Progress vs Pace</span>
+            </div>
+            <div className="card__body card__body--chart">
+              {dashState.data.daily_series.length === 0 ? (
+                <p className="chart-empty">No runs recorded this year yet.</p>
+              ) : (
+                <>
+                  <PaceChart
+                    dailySeries={dashState.data.daily_series}
+                    goalKm={dashState.data.goal_km}
+                  />
+                  <div className="member-row" style={{ marginTop: 16 }}>
+                    <div className="member-row__bar-track">
+                      <div
+                        className="member-row__bar-fill"
+                        style={{
+                          width: `${Math.min(dashState.data.progress_pct, 100)}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="member-row__stats">
+                      {dashState.data.progress_pct.toFixed(1)}%
+                      {' · '}
+                      {dashState.data.distance_to_date_km.toFixed(1)}
+                      {' / '}
+                      {dashState.data.goal_km.toFixed(0)} km
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
           {/* Stats card */}
           {dashStats && (
             <div className="card">
@@ -235,45 +274,6 @@ export default function DashboardPage({ athleteId: _athleteId }: Props) {
               </div>
             </div>
           )}
-
-          {/* Badges card */}
-          <BadgeRow distanceKm={dashState.data.distance_to_date_km} />
-
-          {/* Pace chart card */}
-          <div className="card">
-            <div className="card__header">
-              <span className="card__label">Progress vs Pace</span>
-            </div>
-            <div className="card__body card__body--chart">
-              {dashState.data.daily_series.length === 0 ? (
-                <p className="chart-empty">No runs recorded this year yet.</p>
-              ) : (
-                <>
-                  <PaceChart
-                    dailySeries={dashState.data.daily_series}
-                    goalKm={dashState.data.goal_km}
-                  />
-                  <div className="member-row" style={{ marginTop: 16 }}>
-                    <div className="member-row__bar-track">
-                      <div
-                        className="member-row__bar-fill"
-                        style={{
-                          width: `${Math.min(dashState.data.progress_pct, 100)}%`,
-                        }}
-                      />
-                    </div>
-                    <span className="member-row__stats">
-                      {dashState.data.progress_pct.toFixed(1)}%
-                      {' · '}
-                      {dashState.data.distance_to_date_km.toFixed(1)}
-                      {' / '}
-                      {dashState.data.goal_km.toFixed(0)} km
-                    </span>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
 
           {/* Goal edit card */}
           <div className="card">

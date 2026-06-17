@@ -606,37 +606,15 @@ button {
 
 /* ── Badges ──────────────────────────────────────────── */
 
-.badge-row {
+.header-badges {
   display: flex;
-  justify-content: space-around;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-.badge-item {
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  flex: 1;
+  gap: 10px;
 }
 
-.badge-item__name {
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--text-2);
-  text-align: center;
-}
-
-.badge-item__name--unearned {
-  color: var(--text-3);
-}
-
-.badge-item__threshold {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  color: var(--text-3);
-  text-align: center;
+.header-badges__item {
+  display: inline-flex;
+  line-height: 0;
 }
 
 /* ── Loading ─────────────────────────────────────────── */
