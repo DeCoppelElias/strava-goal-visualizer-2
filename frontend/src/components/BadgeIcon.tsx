@@ -33,21 +33,21 @@ export default function BadgeIcon({ tier, color, width = 80, height = 96 }: Badg
   const isPlatinum = tier === 'platinum'
 
   return (
-    <svg viewBox="0 0 80 96" width={width} height={height} xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 80 96" width={width} height={height} style={{ color }} xmlns="http://www.w3.org/2000/svg">
       {/* Shield */}
-      <path d={SHIELD} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" />
+      <path d={SHIELD} fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
       {/* Shoe */}
       <g transform={tier === 'bronze' ? G_BRONZE : G_STD}>
-        <path d={BODY} transform={SHOE_T} fill={color} />
-        {hasBands && <path d={BANDS} transform={SHOE_T} fill={color} />}
-        {hasRungs && <path d={RUNGS} transform={SHOE_T} fill={color} />}
+        <path d={BODY} transform={SHOE_T} fill="currentColor" />
+        {hasBands && <path d={BANDS} transform={SHOE_T} fill="currentColor" />}
+        {hasRungs && <path d={RUNGS} transform={SHOE_T} fill="currentColor" />}
       </g>
       {/* Platinum-only lace lines */}
       {isPlatinum && (
         <>
-          <line x1="8.594013" y1="0" x2="-8.592421" y2="0" transform="matrix(0.71859 0 0 1.5 16.097627 43.316379)" fill="none" stroke={color} strokeWidth="0.96" />
-          <line x1="8.592422" y1="0" x2="-8.592421" y2="0" transform="matrix(0.71859 0 0 1.5 23.273187 49.046827)" fill="none" stroke={color} strokeWidth="0.96" />
-          <line x1="8.592422" y1="0" x2="-8.592421" y2="0" transform="matrix(0.71859 0 0 1.5 30.856029 54.844126)" fill="none" stroke={color} strokeWidth="0.96" />
+          <line x1="8.594013" y1="0" x2="-8.592421" y2="0" transform="matrix(0.71859 0 0 1.5 16.097627 43.316379)" fill="none" stroke="currentColor" strokeWidth="0.96" />
+          <line x1="8.592422" y1="0" x2="-8.592421" y2="0" transform="matrix(0.71859 0 0 1.5 23.273187 49.046827)" fill="none" stroke="currentColor" strokeWidth="0.96" />
+          <line x1="8.592422" y1="0" x2="-8.592421" y2="0" transform="matrix(0.71859 0 0 1.5 30.856029 54.844126)" fill="none" stroke="currentColor" strokeWidth="0.96" />
         </>
       )}
     </svg>

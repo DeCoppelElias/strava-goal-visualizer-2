@@ -17,7 +17,7 @@ const BADGES: BadgeSpec[] = [
   { tier: 'platinum', name: 'Thousand',    threshold: 1000, color: '#9ab0c8', label: '1,000 km' },
 ]
 
-const UNEARNED = '#3d4358'
+const UNEARNED = 'var(--badge-locked)'
 
 interface Props {
   distanceKm: number
@@ -30,8 +30,16 @@ export default function BadgeRow({ distanceKm }: Props) {
         const earned = distanceKm >= b.threshold
         const label = `${b.name} — ${b.label} (${earned ? 'earned' : 'locked'})`
         return (
-          <span key={b.tier} className="header-badges__item" title={label} aria-label={label}>
-            <BadgeIcon tier={b.tier} color={earned ? b.color : UNEARNED} width={40} height={48} />
+          <span
+            key={b.tier}
+            className="header-badges__item"
+            tabIndex={0}
+            aria-label={label}
+          >
+            <BadgeIcon tier={b.tier} color={earned ? b.color : UNEARNED} width={60} height={72} />
+            <span className="header-badges__tooltip" role="tooltip">
+              {label}
+            </span>
           </span>
         )
       })}

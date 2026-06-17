@@ -1625,6 +1625,8 @@ Potentially think about whether syncing should immediatly remove all current mem
 
 **Testability:** Badges card visible on Dashboard, not on Clubs page. Earned badges show tier color; unearned show dark grey. All four tiers render at the correct threshold.
 
+**Refinement (2026-06-17):** Enlarged header badges 40×48 → 60×72 px (150%) and replaced the slow native `title` tooltip with a custom CSS hover/focus tooltip (`.header-badges__tooltip`) that appears instantly below each badge. Keyboard-accessible via `tabIndex` + `:focus-visible`. Replaced the hardcoded unearned color (`#3d4358`, dark-mode only — looked solid in light mode and silver-ish in dark) with a theme-adaptive `--badge-locked` token; `BadgeIcon` now paints via `currentColor`.
+
 ---
 
 Also consider meta tools, how can I as an admin know how many clubs/people are connected? How the service is doing?

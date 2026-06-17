@@ -16,6 +16,8 @@
   --text-2:        #8b91a8;
   --text-3:        #3d4358;
 
+  --badge-locked:  #363b48;
+
   --accent:        #4b8cf7;
   --accent-dim:    rgba(75, 140, 247, 0.10);
   --accent-strong: #6ba3f9;
@@ -39,6 +41,8 @@
   --text-1:        #0d0f14;
   --text-2:        #5c6380;
   --text-3:        #a8adc4;
+
+  --badge-locked:  #ccd0dd;
 
   --accent:        #3b7ef6;
   --accent-dim:    rgba(59, 126, 246, 0.08);
@@ -613,8 +617,37 @@ button {
 }
 
 .header-badges__item {
+  position: relative;
   display: inline-flex;
   line-height: 0;
+  outline: none;
+}
+
+.header-badges__tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  white-space: nowrap;
+  padding: 6px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-1);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 20;
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.header-badges__item:hover .header-badges__tooltip,
+.header-badges__item:focus-visible .header-badges__tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 /* ── Loading ─────────────────────────────────────────── */
