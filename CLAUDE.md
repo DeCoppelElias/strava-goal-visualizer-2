@@ -132,6 +132,7 @@ async def oauth_authorize(...) -> AuthorizeResponse:
 
 - Only `sport_type = 'Run'` activities are stored — filtered at ingest time. Strava returns all activity types; the sync engine discards non-running activities before any DB write. All stored activities are runs.
 - Tokens are never logged anywhere
+- **Logging convention:** use a module-level `logger = logging.getLogger(__name__)`; `info` for normal lifecycle, `warning` for recoverable/expected external failures (e.g. Strava 429), `error` for unexpected failures. The per-request `request_id` is injected automatically by `RequestIdMiddleware` + `RequestIdFilter` (`backend/shared/logging.py`) — never pass it manually. Never log tokens or secrets.
 - **Rate limiting via `slowapi` on every endpoint without exception.** Every new route must carry a `@limiter.limit(...)` decorator. See `docs/design.md` §6.0.3 for the approved limit per endpoint.
 - Session cookies: `HttpOnly`, `Secure`, `SameSite=Lax`; rotated on every login
 - CORS: strict allowlist to `settings.frontend_origin` only

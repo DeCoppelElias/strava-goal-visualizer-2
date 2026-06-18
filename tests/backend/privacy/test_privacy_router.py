@@ -1,13 +1,12 @@
+import logging
 from unittest.mock import AsyncMock, MagicMock
-
-import pytest
-from fastapi import HTTPException
-from fastapi.testclient import TestClient
 
 from backend.auth.dependencies import get_current_user
 from backend.dependencies import get_privacy_service
 from backend.shared.db import get_db
 from backend.shared.models import DeletionReason, User
+from fastapi import HTTPException
+from fastapi.testclient import TestClient
 
 
 def _make_mock_db(user=None):
@@ -37,13 +36,35 @@ _DEAUTH_PAYLOAD = {
 def _stub_user(user: User):
     async def _inner():
         return user
+
     return _inner
 
 
 def _stub_401():
     async def _inner():
         raise HTTPException(status_code=401)
+
     return _inner
+
+
+def test_deauth_webhook_logs_receipt(caplog):
+    from backend.main import app
+
+    user = User(id=1, strava_athlete_id=12345)
+    mock_svc = MagicMock()
+    mock_svc.delete_user_data = AsyncMock()
+
+    app.dependency_overrides[get_db] = _make_mock_db(user)
+    app.dependency_overrides[get_privacy_service] = lambda: mock_svc
+    try:
+        with caplog.at_level(logging.INFO):
+            client = TestClient(app)
+            resp = client.post("/strava/deauth", json=_DEAUTH_PAYLOAD)
+        assert resp.status_code == 200
+        assert "deauth webhook received" in caplog.text.lower()
+        assert "12345" in caplog.text
+    finally:
+        app.dependency_overrides.clear()
 
 
 def test_delete_returns_200_and_deleted_true_when_authenticated():
@@ -255,7 +276,10 @@ def test_deauth_post_returns_200_when_service_raises():
     app.dependency_overrides[get_db] = _make_mock_db(user=known_user)
     app.dependency_overrides[get_privacy_service] = lambda: mock_svc
     try:
-        with patch("backend.main._run_migrations"), TestClient(app, raise_server_exceptions=False) as client:
+        with (
+            patch("backend.main._run_migrations"),
+            TestClient(app, raise_server_exceptions=False) as client,
+        ):
             response = client.post("/strava/deauth", json=_DEAUTH_PAYLOAD)
         assert response.status_code == 200
     finally:

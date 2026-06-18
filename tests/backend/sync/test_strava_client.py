@@ -1,3 +1,5 @@
+import logging
+
 import httpx
 import pytest
 from backend.sync.exceptions import StravaAPIError, StravaUnauthorizedError
@@ -149,3 +151,23 @@ async def test_fetch_athlete_clubs_raises_api_error_on_network_error(respx_mock)
     respx_mock.get(STRAVA_CLUBS_URL).mock(side_effect=httpx.ConnectError("refused"))
     with pytest.raises(StravaAPIError):
         await fetch_athlete_clubs("my-token")
+
+
+async def test_fetch_activities_logs_warning_on_429(respx_mock, caplog):
+    respx_mock.get(STRAVA_ACTIVITIES_URL).mock(
+        return_value=httpx.Response(429, headers={"Retry-After": "60"})
+    )
+    with caplog.at_level(logging.WARNING), pytest.raises(StravaAPIError):
+        await fetch_activities("my-token")
+    assert "rate limit" in caplog.text.lower()
+    assert "60" in caplog.text
+
+
+async def test_fetch_athlete_clubs_logs_warning_on_429(respx_mock, caplog):
+    respx_mock.get(STRAVA_CLUBS_URL).mock(
+        return_value=httpx.Response(429, headers={"Retry-After": "30"})
+    )
+    with caplog.at_level(logging.WARNING), pytest.raises(StravaAPIError):
+        await fetch_athlete_clubs("my-token")
+    assert "rate limit" in caplog.text.lower()
+    assert "30" in caplog.text

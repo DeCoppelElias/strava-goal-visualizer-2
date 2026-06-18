@@ -45,7 +45,7 @@ async def strava_webhook_challenge(
 ) -> WebhookChallengeResponse:
     if hub_verify_token != settings.strava_webhook_verify_token:
         raise HTTPException(status_code=403, detail="Invalid verify token")
-    return WebhookChallengeResponse(hub_challenge=hub_challenge)
+    return WebhookChallengeResponse(hub_challenge=hub_challenge)  # type: ignore[call-arg]
 
 
 @router.post("/strava/deauth", response_model=DeauthResponse)
@@ -59,13 +59,17 @@ async def strava_deauth_webhook(
     if payload.object_type != "athlete" or payload.updates.get("authorized") != "false":
         return DeauthResponse()
 
+    logger.info("Strava deauth webhook received for athlete %s", payload.owner_id)
+
     try:
         result = await db.execute(select(User).where(User.strava_athlete_id == payload.owner_id))
         user = result.scalar_one_or_none()
         if user is None:
             logger.warning("Strava deauth: unknown athlete %s", payload.owner_id)
             return DeauthResponse()
-        await privacy_service.delete_user_data(db, user_id=user.id, reason=DeletionReason.STRAVA_DEAUTH)
+        await privacy_service.delete_user_data(
+            db, user_id=user.id, reason=DeletionReason.STRAVA_DEAUTH
+        )
     except Exception as exc:
         logger.error("Strava deauth failed for athlete %s: %s", payload.owner_id, exc)
 

@@ -21,16 +21,15 @@ from backend.goals.router import router as goals_router
 from backend.privacy.router import router as privacy_router
 from backend.shared.config import settings
 from backend.shared.db import engine
+from backend.shared.logging import configure_logging
 from backend.shared.rate_limit import limiter
+from backend.shared.request_id import RequestIdMiddleware
 from backend.sync.router import router as sync_router
 
 # ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s — %(message)s",
-)
+configure_logging()
 logger = logging.getLogger(__name__)
 
 
@@ -68,9 +67,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RequestIdMiddleware)
 
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
 app.include_router(auth_router)
 app.include_router(sync_router)
@@ -100,7 +100,7 @@ async def health() -> HealthResponse:
 
 
 @app.get("/health/db", response_model=DbHealthResponse)
-@limiter.limit("10/minute")  # type: ignore[misc]
+@limiter.limit("10/minute")
 async def health_db(request: Request) -> DbHealthResponse:
     try:
         async with engine.connect() as conn:

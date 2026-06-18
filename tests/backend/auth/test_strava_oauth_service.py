@@ -1,10 +1,16 @@
+import logging
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 from urllib.parse import parse_qs, urlparse
 
 import httpx
 import pytest
-from backend.auth.exceptions import InsufficientScopeError, OAuthStateError, StravaAPIError
+from backend.auth.exceptions import (
+    InsufficientScopeError,
+    OAuthStateError,
+    StravaAPIError,
+    TokenRefreshError,
+)
 from backend.auth.strava_oauth_service import SCOPES, STRAVA_AUTH_URL, StravaOAuthService
 
 
@@ -71,6 +77,35 @@ def _make_db(existing_user=None, existing_creds=None) -> AsyncMock:
     db.execute.side_effect = [user_result, creds_result]
 
     return db
+
+
+async def test_ensure_fresh_token_logs_error_on_refresh_http_error(mock_settings, caplog):
+    crypto = MagicMock()
+    crypto.decrypt.return_value = "refresh_xyz"
+
+    creds = MagicMock()
+    creds.token_expires_at = datetime.now(UTC) - timedelta(hours=1)  # expired -> forces refresh
+    creds.refresh_token_encrypted = "enc_refresh"
+    creds.access_token_encrypted = "enc_access"
+
+    result = MagicMock()
+    result.scalar_one_or_none.return_value = creds
+    db = AsyncMock()
+    db.execute = AsyncMock(return_value=result)
+
+    service = StravaOAuthService(MagicMock(), crypto)
+
+    http_error = httpx.HTTPStatusError("boom", request=MagicMock(), response=MagicMock())
+    with (
+        _patch_httpx(raise_for_status=http_error),
+        caplog.at_level(logging.ERROR),
+        pytest.raises(TokenRefreshError),
+    ):
+        await service.ensure_fresh_token(db, user_id=42)
+
+    assert "token refresh failed" in caplog.text.lower()
+    assert "42" in caplog.text
+    assert "refresh_xyz" not in caplog.text  # never log the token
 
 
 @pytest.mark.asyncio

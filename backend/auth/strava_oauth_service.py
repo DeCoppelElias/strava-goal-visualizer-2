@@ -185,13 +185,18 @@ class StravaOAuthService:
                     },
                 )
                 if response.status_code == 401:
+                    logger.warning(
+                        "Strava token refresh rejected for user %s — credentials revoked", user_id
+                    )
                     raise TokenRefreshError("Strava refresh rejected — credentials revoked")
                 try:
                     response.raise_for_status()
                 except httpx.HTTPStatusError as exc:
+                    logger.error("Strava token refresh failed for user %s: %s", user_id, exc)
                     raise TokenRefreshError(f"Strava refresh failed: {exc}") from exc
                 token_data: dict[str, Any] = response.json()
         except httpx.RequestError as exc:
+            logger.error("Network error during Strava token refresh for user %s: %s", user_id, exc)
             raise TokenRefreshError(f"Network error during Strava token refresh: {exc}") from exc
 
         try:
@@ -199,6 +204,7 @@ class StravaOAuthService:
             creds.refresh_token_encrypted = self.crypto.encrypt(token_data["refresh_token"])
             creds.token_expires_at = datetime.fromtimestamp(token_data["expires_at"], tz=UTC)
         except KeyError as exc:
+            logger.error("Strava token refresh response missing fields for user %s", user_id)
             raise TokenRefreshError("Strava token response missing expected fields") from exc
 
         return cast("str", token_data["access_token"])

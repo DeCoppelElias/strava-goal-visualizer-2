@@ -36,6 +36,11 @@ async def fetch_activities(
             try:
                 response.raise_for_status()
             except httpx.HTTPStatusError as exc:
+                if response.status_code == 429:
+                    logger.warning(
+                        "Strava rate limit hit (429) fetching activities; retry-after=%s",
+                        response.headers.get("Retry-After", "?"),
+                    )
                 raise StravaAPIError(f"Strava API error: {exc}") from exc
             return response.json()  # type: ignore[no-any-return]
     except httpx.RequestError as exc:
@@ -57,6 +62,11 @@ async def fetch_athlete_clubs(access_token: str) -> list[dict[str, Any]]:
             try:
                 response.raise_for_status()
             except httpx.HTTPStatusError as exc:
+                if response.status_code == 429:
+                    logger.warning(
+                        "Strava rate limit hit (429) fetching clubs; retry-after=%s",
+                        response.headers.get("Retry-After", "?"),
+                    )
                 raise StravaAPIError(f"Strava API error: {exc}") from exc
             return response.json()  # type: ignore[no-any-return]
     except httpx.RequestError as exc:
