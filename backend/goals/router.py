@@ -13,7 +13,7 @@ router = APIRouter()
 
 
 @router.get("/goals", response_model=GoalResponse)
-@limiter.limit("30/minute")  # type: ignore[misc]
+@limiter.limit("30/minute")
 async def get_goals(
     request: Request,
     current_user: User = Depends(get_current_user),  # noqa: B008
@@ -25,7 +25,7 @@ async def get_goals(
 
 
 @router.put("/goals", response_model=GoalResponse)
-@limiter.limit("10/minute")  # type: ignore[misc]
+@limiter.limit("10/minute")
 async def update_goals(
     request: Request,
     body: UpdateGoalRequest,

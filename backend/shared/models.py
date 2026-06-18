@@ -129,7 +129,7 @@ class ClubMembership(Base):
     club: Mapped["Club"] = relationship(back_populates="memberships")
 
 
-class DeletionReason(str, enum.Enum):
+class DeletionReason(enum.StrEnum):
     USER_INITIATED = "user_initiated"
     STRAVA_DEAUTH = "strava_deauth"
 

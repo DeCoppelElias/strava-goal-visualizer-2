@@ -20,7 +20,7 @@ router = APIRouter()
 
 
 @router.post("/sync", response_model=SyncResponse)
-@limiter.limit("2/minute")  # type: ignore[misc]
+@limiter.limit("2/minute")
 async def sync_activities(
     request: Request,
     current_user: User = Depends(get_current_user),  # noqa: B008

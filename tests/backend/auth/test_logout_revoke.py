@@ -109,8 +109,8 @@ def _make_creds(user_id: int = 1) -> OAuthCredentials:
     return OAuthCredentials(
         id=1,
         user_id=user_id,
-        access_token_encrypted="enc_access",  # noqa: S106
-        refresh_token_encrypted="enc_refresh",  # noqa: S106
+        access_token_encrypted="enc_access",
+        refresh_token_encrypted="enc_refresh",
         token_expires_at=datetime(2030, 1, 1, tzinfo=UTC),
         scope="activity:read_all,profile:read_all",
     )

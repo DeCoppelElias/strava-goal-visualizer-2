@@ -43,7 +43,7 @@ async def test_create_state_token_stores_token_and_expiration():
 @pytest.mark.asyncio
 async def test_validate_valid_token_returns_true_and_deletes_token():
     future_expiry = datetime.now(UTC) + timedelta(minutes=5)
-    token_obj = OAuthStateToken(token="valid-token", expires_at=future_expiry)  # noqa: S106
+    token_obj = OAuthStateToken(token="valid-token", expires_at=future_expiry)
     db = _mock_db_with_token(token_obj)
 
     service = StateTokenService()
@@ -69,7 +69,7 @@ async def test_validate_unknown_token_returns_false():
 @pytest.mark.asyncio
 async def test_validate_expired_token_returns_false_and_deletes_token():
     expired = datetime.now(UTC) - timedelta(minutes=5)
-    token_obj = OAuthStateToken(token="expired-token", expires_at=expired)  # noqa: S106
+    token_obj = OAuthStateToken(token="expired-token", expires_at=expired)
     db = _mock_db_with_token(token_obj)
 
     service = StateTokenService()
@@ -83,7 +83,7 @@ async def test_validate_expired_token_returns_false_and_deletes_token():
 @pytest.mark.asyncio
 async def test_consumed_token_cannot_be_reused():
     future_expiry = datetime.now(UTC) + timedelta(minutes=5)
-    token_obj = OAuthStateToken(token="token", expires_at=future_expiry)  # noqa: S106
+    token_obj = OAuthStateToken(token="token", expires_at=future_expiry)
 
     first_result = MagicMock()
     first_result.scalar_one_or_none.return_value = token_obj

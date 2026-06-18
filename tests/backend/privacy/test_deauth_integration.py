@@ -2,16 +2,15 @@ from datetime import UTC, datetime
 from unittest.mock import patch
 
 import httpx
-from httpx import ASGITransport
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from backend.shared.db import get_db
 from backend.shared.models import (
     DeletionEvent,
     OAuthCredentials,
     User,
 )
+from httpx import ASGITransport
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def _seed_user(db: AsyncSession, strava_athlete_id: int) -> User:
@@ -69,10 +68,10 @@ async def test_deauth_endpoint_deletes_user_and_logs_event(db: AsyncSession) -> 
         assert gone is None
 
         events = (
-            await db.execute(
-                select(DeletionEvent).where(DeletionEvent.user_id == strava_id)
-            )
-        ).scalars().all()
+            (await db.execute(select(DeletionEvent).where(DeletionEvent.user_id == strava_id)))
+            .scalars()
+            .all()
+        )
         assert len(events) == 1
         assert events[0].reason == "strava_deauth"
     finally:
@@ -109,10 +108,14 @@ async def test_deauth_endpoint_unknown_athlete_returns_200_no_event(db: AsyncSes
         assert response.status_code == 200
 
         events = (
-            await db.execute(
-                select(DeletionEvent).where(DeletionEvent.user_id == unknown_strava_id)
+            (
+                await db.execute(
+                    select(DeletionEvent).where(DeletionEvent.user_id == unknown_strava_id)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         assert events == []
     finally:
         app.dependency_overrides.pop(get_db, None)

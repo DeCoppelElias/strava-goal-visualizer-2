@@ -1,7 +1,6 @@
 import pytest
-from sqlalchemy import select
-
 from backend.shared.models import DeletionEvent, DeletionReason
+from sqlalchemy import select
 
 
 @pytest.mark.asyncio

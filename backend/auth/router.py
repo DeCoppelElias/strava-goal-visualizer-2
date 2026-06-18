@@ -25,7 +25,7 @@ router = APIRouter()
 
 
 @router.post("/oauth/authorize", response_model=AuthorizeResponse)
-@limiter.limit("10/minute")  # type: ignore[misc]
+@limiter.limit("10/minute")
 async def oauth_authorize(
     request: Request,
     db: AsyncSession = Depends(get_db),  # noqa: B008
@@ -36,7 +36,7 @@ async def oauth_authorize(
 
 
 @router.get("/oauth/callback")
-@limiter.limit("10/minute")  # type: ignore[misc]
+@limiter.limit("10/minute")
 async def oauth_callback(
     request: Request,
     code: str = "",
@@ -71,7 +71,7 @@ async def oauth_callback(
 
 
 @router.get("/session/me", response_model=SessionMeResponse)
-@limiter.limit("60/minute")  # type: ignore[misc]
+@limiter.limit("60/minute")
 async def session_me(
     request: Request,
     current_user: User = Depends(get_current_user),  # noqa: B008
@@ -84,7 +84,7 @@ async def session_me(
 
 
 @router.post("/session/logout", response_model=LogoutResponse)
-@limiter.limit("10/minute")  # type: ignore[misc]
+@limiter.limit("10/minute")
 async def session_logout(
     request: Request,
     current_user: User = Depends(get_current_user),  # noqa: B008
@@ -94,7 +94,7 @@ async def session_logout(
 
 
 @router.post("/oauth/revoke", response_model=RevokeResponse)
-@limiter.limit("10/minute")  # type: ignore[misc]
+@limiter.limit("10/minute")
 async def oauth_revoke(
     request: Request,
     current_user: User = Depends(get_current_user),  # noqa: B008

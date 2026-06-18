@@ -13,7 +13,7 @@ router = APIRouter()
 
 
 @router.get("/clubs", response_model=list[ClubResponse])
-@limiter.limit("30/minute")  # type: ignore[misc]
+@limiter.limit("30/minute")
 async def get_clubs(
     request: Request,
     current_user: User = Depends(get_current_user),  # noqa: B008

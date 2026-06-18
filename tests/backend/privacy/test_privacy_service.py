@@ -1,8 +1,5 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from backend.privacy.privacy_service import PrivacyService
 from backend.shared.models import (
     Activity,
@@ -15,6 +12,8 @@ from backend.shared.models import (
     SyncState,
     User,
 )
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def _seed_full_user(db: AsyncSession, strava_athlete_id: int = 99001) -> User:
@@ -63,11 +62,21 @@ async def test_delete_user_data_removes_all_rows(db: AsyncSession) -> None:
     await db.flush()
 
     assert (await db.execute(select(User).where(User.id == user.id))).scalar_one_or_none() is None
-    assert (await db.execute(select(Activity).where(Activity.user_id == user.id))).scalars().all() == []
-    assert (await db.execute(select(OAuthCredentials).where(OAuthCredentials.user_id == user.id))).scalar_one_or_none() is None
-    assert (await db.execute(select(SyncState).where(SyncState.user_id == user.id))).scalar_one_or_none() is None
-    assert (await db.execute(select(Goal).where(Goal.user_id == user.id))).scalar_one_or_none() is None
-    assert (await db.execute(select(ClubMembership).where(ClubMembership.user_id == user.id))).scalars().all() == []
+    assert (
+        await db.execute(select(Activity).where(Activity.user_id == user.id))
+    ).scalars().all() == []
+    assert (
+        await db.execute(select(OAuthCredentials).where(OAuthCredentials.user_id == user.id))
+    ).scalar_one_or_none() is None
+    assert (
+        await db.execute(select(SyncState).where(SyncState.user_id == user.id))
+    ).scalar_one_or_none() is None
+    assert (
+        await db.execute(select(Goal).where(Goal.user_id == user.id))
+    ).scalar_one_or_none() is None
+    assert (
+        await db.execute(select(ClubMembership).where(ClubMembership.user_id == user.id))
+    ).scalars().all() == []
 
 
 async def test_delete_user_data_writes_audit_event(db: AsyncSession) -> None:
@@ -77,7 +86,11 @@ async def test_delete_user_data_writes_audit_event(db: AsyncSession) -> None:
     await svc.delete_user_data(db, user_id=user.id, reason=DeletionReason.USER_INITIATED)
     await db.flush()
 
-    events = (await db.execute(select(DeletionEvent).where(DeletionEvent.user_id == 99002))).scalars().all()
+    events = (
+        (await db.execute(select(DeletionEvent).where(DeletionEvent.user_id == 99002)))
+        .scalars()
+        .all()
+    )
     assert len(events) == 1
     assert events[0].reason == "user_initiated"
     assert events[0].deleted_at is not None
@@ -90,7 +103,11 @@ async def test_delete_user_data_strava_deauth_reason(db: AsyncSession) -> None:
     await svc.delete_user_data(db, user_id=user.id, reason=DeletionReason.STRAVA_DEAUTH)
     await db.flush()
 
-    events = (await db.execute(select(DeletionEvent).where(DeletionEvent.user_id == 99003))).scalars().all()
+    events = (
+        (await db.execute(select(DeletionEvent).where(DeletionEvent.user_id == 99003)))
+        .scalars()
+        .all()
+    )
     assert len(events) == 1
     assert events[0].reason == "strava_deauth"
 
@@ -148,5 +165,9 @@ async def test_delete_user_data_idempotent(db: AsyncSession) -> None:
     await svc.delete_user_data(db, user_id=user_id, reason=DeletionReason.USER_INITIATED)
     await db.flush()
 
-    events = (await db.execute(select(DeletionEvent).where(DeletionEvent.user_id == 99004))).scalars().all()
+    events = (
+        (await db.execute(select(DeletionEvent).where(DeletionEvent.user_id == 99004)))
+        .scalars()
+        .all()
+    )
     assert len(events) == 1

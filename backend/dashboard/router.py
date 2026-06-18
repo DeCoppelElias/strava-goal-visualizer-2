@@ -13,7 +13,7 @@ router = APIRouter()
 
 
 @router.get("/dashboard/personal", response_model=PersonalDashboardResponse)
-@limiter.limit("30/minute")  # type: ignore[misc]
+@limiter.limit("30/minute")
 async def get_personal_dashboard(
     request: Request,
     current_user: User = Depends(get_current_user),  # noqa: B008
@@ -24,7 +24,7 @@ async def get_personal_dashboard(
 
 
 @router.get("/dashboard/club/{club_id}", response_model=ClubDashboardResponse)
-@limiter.limit("30/minute")  # type: ignore[misc]
+@limiter.limit("30/minute")
 async def get_club_dashboard(
     request: Request,
     club_id: int,
