@@ -206,8 +206,10 @@ async def test_daily_series_two_runs_same_day_merged():
 
 # ── _build_daily_series unit tests ──────────────────────────────────────────
 
+
 def test_build_daily_series_single_activity() -> None:
     from decimal import Decimal
+
     year = _real_datetime.now(UTC).year
     rows = [(_real_datetime(year, 1, 5, tzinfo=UTC), Decimal("10000"))]
     result = DashboardService._build_daily_series(rows)
@@ -218,6 +220,7 @@ def test_build_daily_series_single_activity() -> None:
 
 def test_build_daily_series_accumulates_across_days() -> None:
     from decimal import Decimal
+
     year = _real_datetime.now(UTC).year
     rows = [
         (_real_datetime(year, 1, 5, tzinfo=UTC), Decimal("10000")),
@@ -231,6 +234,7 @@ def test_build_daily_series_accumulates_across_days() -> None:
 
 def test_build_daily_series_merges_same_day_activities() -> None:
     from decimal import Decimal
+
     year = _real_datetime.now(UTC).year
     rows = [
         (_real_datetime(year, 3, 1, 8, 0, 0, tzinfo=UTC), Decimal("5000")),

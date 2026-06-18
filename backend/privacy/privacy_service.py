@@ -50,18 +50,18 @@ class PrivacyService:
 
     async def export_user_data(self, db: AsyncSession, user_id: int) -> UserExportResponse:
         user = (await db.execute(select(User).where(User.id == user_id))).scalar_one()
-        goal = (
-            await db.execute(select(Goal).where(Goal.user_id == user_id))
-        ).scalar_one_or_none()
+        goal = (await db.execute(select(Goal).where(Goal.user_id == user_id))).scalar_one_or_none()
         sync = (
             await db.execute(select(SyncState).where(SyncState.user_id == user_id))
         ).scalar_one_or_none()
         activities = (
-            await db.execute(select(Activity).where(Activity.user_id == user_id))
-        ).scalars().all()
+            (await db.execute(select(Activity).where(Activity.user_id == user_id))).scalars().all()
+        )
         memberships = (
-            await db.execute(select(ClubMembership).where(ClubMembership.user_id == user_id))
-        ).scalars().all()
+            (await db.execute(select(ClubMembership).where(ClubMembership.user_id == user_id)))
+            .scalars()
+            .all()
+        )
 
         return UserExportResponse(
             exported_at=datetime.now(UTC),
@@ -72,11 +72,13 @@ class PrivacyService:
             ),
             goal=(
                 ExportGoal(yearly_running_goal_km=float(goal.yearly_running_goal_km))
-                if goal else None
+                if goal
+                else None
             ),
             sync_state=(
                 ExportSyncState(last_sync_completed_at=sync.last_sync_completed_at)
-                if sync else None
+                if sync
+                else None
             ),
             activities=[
                 ExportActivity(
@@ -90,7 +92,6 @@ class PrivacyService:
                 for a in activities
             ],
             club_memberships=[
-                ExportClubMembership(club_id=m.club_id, synced_at=m.synced_at)
-                for m in memberships
+                ExportClubMembership(club_id=m.club_id, synced_at=m.synced_at) for m in memberships
             ],
         )

@@ -1,6 +1,6 @@
 # TASK-7.5: Strava Deauth Webhook Design
 
-**Date:** 2026-06-14  
+**Date:** 2026-06-14
 **Status:** Approved
 
 ---
