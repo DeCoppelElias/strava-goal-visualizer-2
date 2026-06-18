@@ -16,27 +16,30 @@ repos:
       - id: detect-private-key
 
   # ---------------------------------------------------------------------------
-  # Ruff — fast linting + formatting (runs before mypy)
+  # Ruff + Mypy — run from the project venv so the commit gate and
+  # `make lint`/`make typecheck` use the SAME tool versions (single source of
+  # truth: the dev dependencies in pyproject.toml / uv.lock). Running mypy in the
+  # venv also means it sees every installed dependency (e.g. slowapi) natively,
+  # so no `additional_dependencies` list to keep in sync.
   # ---------------------------------------------------------------------------
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.4.7
+  - repo: local
     hooks:
       - id: ruff
-        args: ["--fix"]
+        name: ruff
+        entry: uv run ruff check --force-exclude --fix
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
       - id: ruff-format
-
-  # ---------------------------------------------------------------------------
-  # Mypy — static type checking
-  # ---------------------------------------------------------------------------
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.0
-    hooks:
+        name: ruff-format
+        entry: uv run ruff format --force-exclude
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
       - id: mypy
-        args: ["--config-file", "pyproject.toml"]
+        name: mypy
+        entry: uv run mypy --config-file pyproject.toml
+        language: system
+        types_or: [python, pyi]
         exclude: ^(backend/db/migrations/|tests/)
-        additional_dependencies:
-          - "fastapi>=0.115"
-          - "sqlalchemy[asyncio]>=2.0"
-          - "httpx>=0.27"
-          - "cryptography>=42.0"
-          - "python-dotenv>=1.0"
+        require_serial: true
