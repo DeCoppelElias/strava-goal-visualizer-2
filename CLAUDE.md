@@ -16,6 +16,7 @@ FastAPI backend + React frontend + PostgreSQL. Strava OAuth for authentication. 
 Every task follows this exact sequence (see `docs/workflow.md` for authoritative version):
 
 ### 1. PLAN MODE
+- Run `make ci` first to surface latent lint/type issues before starting — especially after a quiet period (commit hooks only check changed files). See `docs/learnings.md`
 - **Skill:** invoke `brainstorming` before planning any new feature or non-trivial change
 - Read only the relevant task from `docs/epics/backlog.md` (not the whole file)
 - Consult `docs/design.md` when architecture decisions are needed
@@ -246,6 +247,11 @@ make ci            # full CI suite: pre-commit + lint + format-check + typecheck
 make pre-commit-run  # run all pre-commit hooks against all files
 ```
 
+> **Run `make ci` at the start of a task and after any quiet period.** Commit
+> hooks only check the files in each commit, so latent lint/type issues in
+> untouched files won't surface until they block an unrelated commit. `make ci`
+> re-checks the whole repo against current rules. See `docs/learnings.md`.
+
 ---
 
 ## Where to Find Things
@@ -253,6 +259,7 @@ make pre-commit-run  # run all pre-commit hooks against all files
 - **Backlog + task status:** `docs/epics/backlog.md`
 - **Design decisions:** `docs/design.md`
 - **Workflow rules:** `docs/workflow.md`
+- **Project learnings:** `docs/learnings.md`
 - **Front-end style** `docs/design/style.md`
 - **Env var schema:** `.env.example`
 - **Test DB harness:** `tests/conftest.py`

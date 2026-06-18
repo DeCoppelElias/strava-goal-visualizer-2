@@ -7,6 +7,7 @@ You MUST follow this sequence strictly:
 ## 1. PLAN MODE
 
 Before planning:
+- Run `make ci` to surface any latent lint/type issues before starting — especially after a quiet period. Commit hooks only check the files in each commit, so pre-existing issues in untouched files stay hidden until they block an unrelated commit. See `docs/learnings.md`.
 - Read the relevant task entry in `docs/epics/backlog.md` (the specific task, not the full file).
 - Consult `docs/design.md` only when the broader architecture or product decisions are needed to understand the task.
 
