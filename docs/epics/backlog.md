@@ -229,7 +229,7 @@ Data-access tasks are verified with integration tests against a real PostgreSQL 
 - Plain-text logging refined with a per-request correlation id (request-id middleware + contextvar + logging filter)
 - Explicit failure-point logging: Strava 429 rate limits, OAuth token-refresh failures, deauth webhook
 - `docs/ops/db-statistics.md` — connect instructions (local + Fly) and a query catalogue
-- `make stats` helper reading `DATABASE_URL`
+- `scripts/stats.sql` curated summary, run via documented local/Fly commands
 
 **Excluded:**
 - JSON / structured logging and log shipping (deferred; format isolated for an easy later switch)
@@ -1679,24 +1679,23 @@ Potentially think about whether syncing should immediatly remove all current mem
 
 #### TASK-8.3
 
-**Name:** Document DB statistics queries + `make stats` helper
+**Name:** Document DB statistics queries
 
-**Goal:** Provide a reference doc for reading usage statistics from PostgreSQL — total/recent users, engagement, clubs, content volume — that works locally and against the deployed Fly database, plus a `make stats` shortcut for the common subset. Existing data only; no schema changes.
+**Goal:** Provide a reference doc for reading usage statistics from PostgreSQL — total/recent users, engagement, clubs, content volume — that works locally and against the deployed Fly database, plus a `scripts/stats.sql` curated summary run via documented commands. Existing data only; no schema changes.
 
 **Context:** The operator wants to know "how is the service doing?" without an admin UI. Sessions are signed cookies (no "currently online" count) and there is no `last_seen_at` column (no real WAU/DAU) — the doc documents the available proxies and notes the limitation. Design spec: `docs/superpowers/specs/2026-06-18-observability-basics-design.md`.
 
-**Input:** `docs/ops/webhook-registration.md` (sibling reference for style), `Makefile`, `backend/shared/models.py` (column names)
+**Input:** `docs/ops/webhook-registration.md` (sibling reference for style), `backend/shared/models.py` (column names)
 
 **Output:**
-- `docs/ops/db-statistics.md` — new: connect instructions (local `docker compose exec db psql`; Fly `fly postgres connect` / `fly proxy` / piping `scripts/stats.sql`; read-only role recommendation; `fly logs` cross-reference), grouped query catalogue (users, engagement, clubs, content volume), and a caveat box (no `last_seen_at`, no server-side session store)
-- `scripts/stats.sql` — new: curated subset (users, signups last 7 days, users synced, users with a goal, total activities, clubs)
-- `Makefile` — new `stats` target running `psql "$(DATABASE_URL)" -f scripts/stats.sql` + help entry
+- `docs/ops/db-statistics.md` — new: run instructions for the curated summary (local `docker compose exec`; Fly `fly postgres connect ... < scripts/stats.sql`), interactive connect instructions (local + Fly proxy), read-only role recommendation, `fly logs` cross-reference, grouped query catalogue (users, engagement, clubs, content volume), and a caveat box (no `last_seen_at`, no server-side session store)
+- `scripts/stats.sql` — new: curated subset (users, signups last 7 days, users synced, users with a goal, total activities, total distance, clubs)
 
 **Dependencies:** None (reads existing schema)
 
 **Complexity:** Small
 
-**Testability:** Every query in the doc runs without error against a populated local DB and returns the described shape. `make stats` prints the summary locally; documented Fly invocations match Fly's CLI. Documentation/tooling task — no automated tests.
+**Testability:** Every query in the doc runs without error against a populated local DB and returns the described shape. `scripts/stats.sql` prints the summary locally via `docker compose exec`; documented Fly invocations match Fly's CLI. Documentation/tooling task — no automated tests.
 
 ---
 

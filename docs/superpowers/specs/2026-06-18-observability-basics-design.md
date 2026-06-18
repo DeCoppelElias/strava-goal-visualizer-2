@@ -254,33 +254,29 @@ so no sport filter is needed.)_
   **no server-side session store** and therefore no "currently online" count —
   that state does not exist server-side.
 
-**4. `make stats` helper**
+**4. Curated summary file**
 
 - `scripts/stats.sql` — the curated subset as one ordered result set (totals:
   users, signups last 7 days, users synced, users with a goal, total activities,
-  total distance, clubs). Single source of truth, reused by the Fly prod command.
-- `Makefile` target routes through the compose `db` container (the service
-  publishes no host port, and the app's `DATABASE_URL` uses the
-  `postgresql+asyncpg://` driver which `psql` cannot parse):
-  ```makefile
-  stats: ## Print key usage statistics from the local database
-  	docker compose exec -T db psql -U postgres -d strava_dev -f - < scripts/stats.sql
-  ```
-- Local: `make stats`. Production: the same file via `fly postgres connect -a
-  <db-app> < scripts/stats.sql` (documented in the doc).
+  total distance, clubs). Single source of truth for both environments.
+- No `make` target — the run commands are documented directly in the doc (the
+  compose `db` service publishes no host port, and the app's `DATABASE_URL` uses
+  the `postgresql+asyncpg://` driver `psql` cannot parse, so a host-side
+  `psql "$DATABASE_URL"` is not viable):
+  - Local: `docker compose exec -T db psql -U postgres -d strava_dev -f - < scripts/stats.sql`
+  - Production: `fly postgres connect -a <db-app> -d <db-name> < scripts/stats.sql`
 
 ### Files affected
 
 - `docs/ops/db-statistics.md` — new.
 - `scripts/stats.sql` — new.
-- `Makefile` — new `stats` target + help entry.
 
 ### Verification
 
 - Each query in the doc runs without error against a populated local database and
   returns the described shape.
-- `make stats` prints the summary against the local DB; documented Fly
-  invocations are correct for Fly's CLI.
+- `scripts/stats.sql` prints the summary against the local DB via
+  `docker compose exec`; documented Fly invocations are correct for Fly's CLI.
 - This is a documentation/tooling task — no automated tests.
 
 ---
