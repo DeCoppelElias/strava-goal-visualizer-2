@@ -256,15 +256,18 @@ so no sport filter is needed.)_
 
 **4. `make stats` helper**
 
-- `scripts/stats.sql` — the curated subset (totals: users, signups last 7 days,
-  users synced, users with a goal, total activities, clubs).
-- `Makefile` target:
+- `scripts/stats.sql` — the curated subset as one ordered result set (totals:
+  users, signups last 7 days, users synced, users with a goal, total activities,
+  total distance, clubs). Single source of truth, reused by the Fly prod command.
+- `Makefile` target routes through the compose `db` container (the service
+  publishes no host port, and the app's `DATABASE_URL` uses the
+  `postgresql+asyncpg://` driver which `psql` cannot parse):
   ```makefile
-  stats: ## Print key usage statistics from the database
-  	psql "$(DATABASE_URL)" -f scripts/stats.sql
+  stats: ## Print key usage statistics from the local database
+  	docker compose exec -T db psql -U postgres -d strava_dev -f - < scripts/stats.sql
   ```
-- Reads `DATABASE_URL`, so the same command runs locally and against prod (via
-  the `fly proxy` tunnel). The doc shows both invocations.
+- Local: `make stats`. Production: the same file via `fly postgres connect -a
+  <db-app> < scripts/stats.sql` (documented in the doc).
 
 ### Files affected
 
