@@ -219,6 +219,26 @@ Data-access tasks are verified with integration tests against a real PostgreSQL 
 
 ---
 
+### EPIC-8 — Operations & Observability
+
+**Purpose:** Give the operator the two cheapest, highest-value production capabilities for a ~100–1000 user deployment on Fly.io: traceable logs with visibility at real failure points, and a documented way to read usage statistics from PostgreSQL.
+
+**Why it exists (system evolution order):** Before onboarding real users, the operator needs to answer "what is going wrong?" and "how is the service doing?" without standing up a heavyweight observability stack.
+
+**Included:**
+- Plain-text logging refined with a per-request correlation id (request-id middleware + contextvar + logging filter)
+- Explicit failure-point logging: Strava 429 rate limits, OAuth token-refresh failures, deauth webhook
+- `docs/ops/db-statistics.md` — connect instructions (local + Fly) and a query catalogue
+- `make stats` helper reading `DATABASE_URL`
+
+**Excluded:**
+- JSON / structured logging and log shipping (deferred; format isolated for an easy later switch)
+- Error-tracking service (e.g. Sentry)
+- `last_seen_at` column / real WAU–DAU metrics (deferred to a future task)
+- Admin UI or admin endpoint
+
+---
+
 ---
 
 ## TASK BREAKDOWN
@@ -1629,7 +1649,58 @@ Potentially think about whether syncing should immediatly remove all current mem
 
 ---
 
-Also consider meta tools, how can I as an admin know how many clubs/people are connected? How the service is doing?
+#### TASK-8.2
+
+**Name:** Refine application logging (request-id correlation + failure-point logs)
+
+**Goal:** Make production logs traceable to a single request and emit explicit, actionable records at the real failure points. Plain-text output is kept (per-request correlation id, consistent format), isolated so a later switch to JSON is a small change. Add explicit logging for Strava 429 rate limits, OAuth token-refresh failures, and the deauth webhook.
+
+**Context:** Heading to production on Fly.io (~100–1000 users). A full observability stack is overkill; `fly logs` captures stdout. Logging today is an inline `basicConfig` in `main.py` with no correlation id. Design spec: `docs/superpowers/specs/2026-06-18-observability-basics-design.md`.
+
+**Input:** `backend/main.py`, `backend/sync/strava_client.py`, `backend/auth/strava_oauth_service.py`, `backend/privacy/` (router/service), `CLAUDE.md`
+
+**Output:**
+- `backend/shared/logging.py` — new: `request_id_var` contextvar, `RequestIdFilter`, `configure_logging()` with format `%(asctime)s %(levelname)s [%(request_id)s] %(name)s — %(message)s`
+- `backend/shared/request_id.py` — new: `BaseHTTPMiddleware` that reads/generates `X-Request-ID`, sets the contextvar, echoes the response header
+- `backend/main.py` — call `configure_logging()`, register the middleware, remove inline `basicConfig`
+- `backend/sync/strava_client.py` — `warning` log on Strava 429 (with `Retry-After`) in `fetch_activities` and `fetch_athlete_clubs`
+- `backend/auth/strava_oauth_service.py` — `error` log on token-refresh failure (never the token)
+- `backend/privacy/` — `info` on deauth webhook receipt, `error` on processing failure
+- `CLAUDE.md` — logging convention note (module logger, level guidance, automatic request id, never log tokens)
+- `tests/backend/...` — request returns/echoes `X-Request-ID`; `caplog` shows records carry `request_id`; mocked 429 emits warning; mocked refresh failure emits error
+
+**Dependencies:** TASK-7.x (deauth webhook), EPIC-3 (sync client)
+
+**Complexity:** Medium
+
+**Testability:** A response carries an `X-Request-ID` header; a supplied id is echoed unchanged. Log records emitted during a request include a non-default `request_id`. A simulated Strava 429 emits a warning; a simulated token-refresh failure emits an error. No tokens appear in any log. Existing suite still passes.
+
+---
+
+#### TASK-8.3
+
+**Name:** Document DB statistics queries + `make stats` helper
+
+**Goal:** Provide a reference doc for reading usage statistics from PostgreSQL — total/recent users, engagement, clubs, content volume — that works locally and against the deployed Fly database, plus a `make stats` shortcut for the common subset. Existing data only; no schema changes.
+
+**Context:** The operator wants to know "how is the service doing?" without an admin UI. Sessions are signed cookies (no "currently online" count) and there is no `last_seen_at` column (no real WAU/DAU) — the doc documents the available proxies and notes the limitation. Design spec: `docs/superpowers/specs/2026-06-18-observability-basics-design.md`.
+
+**Input:** `docs/ops/webhook-registration.md` (sibling reference for style), `Makefile`, `backend/shared/models.py` (column names)
+
+**Output:**
+- `docs/ops/db-statistics.md` — new: connect instructions (local `docker compose exec db psql`; Fly `fly postgres connect` / `fly proxy` / piping `scripts/stats.sql`; read-only role recommendation; `fly logs` cross-reference), grouped query catalogue (users, engagement, clubs, content volume), and a caveat box (no `last_seen_at`, no server-side session store)
+- `scripts/stats.sql` — new: curated subset (users, signups last 7 days, users synced, users with a goal, total activities, clubs)
+- `Makefile` — new `stats` target running `psql "$(DATABASE_URL)" -f scripts/stats.sql` + help entry
+
+**Dependencies:** None (reads existing schema)
+
+**Complexity:** Small
+
+**Testability:** Every query in the doc runs without error against a populated local DB and returns the described shape. `make stats` prints the summary locally; documented Fly invocations match Fly's CLI. Documentation/tooling task — no automated tests.
+
+---
+
+Also consider meta tools, how can I as an admin know how many clubs/people are connected? How the service is doing? _(addressed by EPIC-8 — TASK-8.2 / TASK-8.3)_
 
 Also consider changing the email to a dedicated support email
 
