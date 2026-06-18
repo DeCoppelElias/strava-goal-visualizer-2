@@ -1677,7 +1677,7 @@ Potentially think about whether syncing should immediatly remove all current mem
 
 ---
 
-#### TASK-8.3
+#### TASK-8.3 ✅
 
 **Name:** Document DB statistics queries
 
