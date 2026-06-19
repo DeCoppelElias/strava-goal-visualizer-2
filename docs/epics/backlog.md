@@ -1931,7 +1931,7 @@ The configured subscription ID is **optional**: the value only exists after the 
 
 ---
 
-#### TASK-10.2
+#### TASK-10.2 ✅
 
 **Name:** README overhaul
 
