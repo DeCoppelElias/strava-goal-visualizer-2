@@ -1,18 +1,25 @@
-# Strava Goal Visualizer
+<h1 align="center">Strava Goal Visualizer</h1>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/)
-[![Node](https://img.shields.io/badge/Node-22-green.svg)](https://nodejs.org/)
+<p align="center">
+  <em>A personal running goal tracker that visualises your yearly Strava progress.</em>
+</p>
 
-> A personal running goal tracker that visualises your yearly Strava progress.
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/Python-3.12-blue.svg" alt="Python 3.12">
+  <img src="https://img.shields.io/badge/Node-22-green.svg" alt="Node 22">
+</p>
 
-![Personal Dashboard](docs/images/personal-dashboard.png)
+<p align="center">
+  <img src="docs/images/personal-dashboard.png" alt="Personal Dashboard">
+</p>
 
 ## Table of Contents
 
 - [Overview](#overview)
 - [See it in action](#see-it-in-action)
 - [Features](#features)
+- [Screenshots](#screenshots)
 - [Tech Stack](#tech-stack)
 - [Prerequisites](#prerequisites)
 - [Local Development](#local-development)
@@ -32,7 +39,9 @@ The app is self-hosted — you run your own instance with your own Strava API cr
 
 ## See it in action
 
-![Showcase](docs/images/showcase.gif)
+<p align="center">
+  <img src="docs/images/showcase.gif" alt="Showcase">
+</p>
 
 ## Features
 
@@ -43,9 +52,25 @@ The app is self-hosted — you run your own instance with your own Strava API cr
 - Strava OAuth login — no password required
 - Self-hosted on Fly.io with a single-command deploy
 
-![Club Dashboard](docs/images/club-dashboard.png)
+## Screenshots
 
-![Badges](docs/images/badges.png)
+**Personal dashboard** — cumulative pace chart and on-pace indicator:
+
+<p align="center">
+  <img src="docs/images/personal-dashboard.png" alt="Personal Dashboard">
+</p>
+
+**Achievement badges** — unlock at 10, 100, 365 and 1,000 km milestones:
+
+<p align="center">
+  <img src="docs/images/badges.png" alt="Achievement Badges">
+</p>
+
+**Club dashboard** — per-member pace lines towards individual goals:
+
+<p align="center">
+  <img src="docs/images/club-dashboard.png" alt="Club Dashboard">
+</p>
 
 ## Tech Stack
 
