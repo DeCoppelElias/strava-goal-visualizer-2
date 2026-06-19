@@ -267,20 +267,20 @@ Data-access tasks are verified with integration tests against a real PostgreSQL 
 
 ---
 
-### EPIC-10 — Production Deployment Guide
+### EPIC-10 — Documentation Finishing
 
-**Purpose:** Document the end-to-end steps to deploy the app to production so that any future operator (or the author after time away) can go from zero to a live, correctly-configured instance without guessing.
+**Purpose:** Complete all public-facing and operator-facing documentation so the repo stands on its own after the app goes offline — a visitor or future operator can understand what was built, run it locally, and deploy it without guessing.
 
-**Why it exists (system evolution order):** The README covers local dev well. Production deployment introduces different concerns — production env var values, running migrations against a live database, registering the Strava webhook, and post-deploy verification. These steps are undocumented and scattered across `.env.example` and `docs/ops/webhook-registration.md`.
+**Why it exists (system evolution order):** The app is feature-complete and hardened. What's missing is a coherent public face: the README has no description of what the app is, production deployment is undocumented, and the webhook registration doc is a loose orphan. This epic wraps that up before the repo is published and the app potentially goes offline.
 
 **Included:**
-- `docs/ops/deployment.md` — authoritative production deployment guide covering env vars, migrations, and post-deploy steps
-- README updated with a brief "Deploying to production" pointer to `docs/ops/deployment.md`
-- Cross-references to `docs/ops/webhook-registration.md` for the webhook registration step
+- README overhaul: app description, feature list, screenshots, tech stack, corrected Node version requirement (22), docs index
+- `docs/ops/deployment.md` — authoritative production deployment guide that absorbs `docs/ops/webhook-registration.md` (webhook registration becomes a section within the deployment guide)
 
 **Excluded:**
 - Infrastructure provisioning (Fly.io account setup, database creation) — operator responsibility
 - CI/CD pipeline automation
+- CONTRIBUTING.md — not expected to attract external contributors
 
 ---
 
@@ -1871,16 +1871,45 @@ The configured subscription ID is **optional**: the value only exists after the 
 
 **Goal:** A new operator can deploy the app to production and reach a correctly-configured, live instance by following `docs/ops/deployment.md` alone.
 
-**Context:** Local dev is documented in the README and Docker Compose section. Production deployment has different requirements — production-appropriate env var values (URLs are not localhost, `SESSION_COOKIE_SECURE=true`), running Alembic migrations against the live DB, and the post-deploy Strava webhook registration step (including copying the returned `STRAVA_WEBHOOK_SUBSCRIPTION_ID`). These are currently undocumented or scattered. The decisions about structure (separate file vs README section, level of detail) are deferred to implementation.
+**Context:** Local dev is documented in the README and Docker Compose section. Production deployment has different concerns — production env var values (no localhost URLs, `SESSION_COOKIE_SECURE=true`), running Alembic migrations against the live DB, and Strava webhook registration (including copying `STRAVA_WEBHOOK_SUBSCRIPTION_ID`). These steps are currently undocumented or scattered across `.env.example` and the orphaned `docs/ops/webhook-registration.md`. The webhook registration doc is absorbed into the deployment guide as a section rather than remaining a separate file.
 
 **Input:** `README.md`, `.env.example`, `docs/ops/webhook-registration.md`
 
 **Output:**
-- `docs/ops/deployment.md` — end-to-end production deployment guide covering: production env var reference (with correct non-localhost defaults), running migrations, post-deploy verification, and cross-reference to `docs/ops/webhook-registration.md` for the webhook registration step
-- `README.md` — brief "Deploying to production" pointer to `docs/ops/deployment.md`
+- `docs/ops/deployment.md` — end-to-end guide covering: production env var reference (with correct non-localhost defaults), running migrations against the live DB, webhook registration (content moved from `docs/ops/webhook-registration.md`), post-deploy verification steps
+- `docs/ops/webhook-registration.md` — replaced by a short redirect stub pointing to `docs/ops/deployment.md` (preserves any existing inbound links/references)
 
 **Dependencies:** TASK-9.1, TASK-9.2 (so `SESSION_COOKIE_SECURE` and `STRAVA_WEBHOOK_SUBSCRIPTION_ID` are already documented in `.env.example` before this guide is written)
 
 **Complexity:** Small
 
 **Testability:** A reader unfamiliar with the project can follow the guide from a fresh environment and reach a live, correctly-configured instance without consulting any other source.
+
+---
+
+#### TASK-10.2
+
+**Name:** README overhaul
+
+**Goal:** The README gives any visitor — including the author returning after time away — an immediate understanding of what the app is, what it looks like, and where to find everything.
+
+**Context:** The current README jumps straight into prerequisites with no description of the app, no feature list, and no screenshots. The app may go offline after publication, so screenshots baked into the README preserve what it looked like. Node.js version requirement is also wrong (says 18+; requires 22). The README should serve as the single entry point that links to all other docs.
+
+**Input:** `README.md`, `docs/` folder, screenshots saved to `docs/images/` by the operator before going offline
+
+**Output:**
+- `docs/images/` — screenshot files provided by operator: `dashboard.png` (personal dashboard with chart, badges, progress bar), `clubs.png` (club progress chart + member bars), optionally `login.png`
+- `README.md` rewritten with:
+  - **Hero section** — one-line description of the app + dashboard screenshot
+  - **Features** — bullet list: personal yearly running goal dashboard, pace chart, achievement badges, club member progress view, Strava OAuth
+  - **Tech stack** — FastAPI · React + Vite (TypeScript) · PostgreSQL · Fly.io
+  - **Prerequisites** — Node.js requirement corrected to 22; existing Windows instructions kept
+  - **Local Development** — existing quickstart cleaned up, unchanged in substance
+  - **Documentation** — index linking: `docs/ops/deployment.md`, `docs/ops/db-statistics.md`, `docs/design.md`, `docs/design/style.md`, `docs/workflow.md`, `docs/learnings.md`, `docs/epics/backlog.md`
+  - Second screenshot (clubs view) placed near the Features section
+
+**Dependencies:** TASK-10.1 (so the deployment guide link is live before the README points to it); screenshots from operator
+
+**Complexity:** Small
+
+**Testability:** A visitor to the GitHub repo page understands what the app does without reading any code. All doc links resolve. Screenshots render in the GitHub markdown preview.
