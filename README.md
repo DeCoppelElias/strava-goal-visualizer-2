@@ -27,6 +27,7 @@
 - [Generating Secret Keys](#generating-secret-keys)
 - [Running Tests](#running-tests)
 - [Documentation](#documentation)
+- [Strava API Compliance](#strava-api-compliance)
 - [License](#license)
 
 ## Overview
@@ -193,6 +194,19 @@ make test
 | [docs/workflow.md](docs/workflow.md) | Development workflow |
 | [docs/learnings.md](docs/learnings.md) | Project learnings and gotchas |
 | [docs/epics/backlog.md](docs/epics/backlog.md) | Full task backlog |
+
+## Strava API Compliance
+
+> ⚠️ **This project does not comply with Strava's API Agreement and API Policy, and is not being continued for that reason.** It is a personal learning project, not an approved Strava application. Read this before running or reusing the code.
+
+The app was built around the **club progress feature** — showing each club member's running progress on a shared chart. That feature turned out to be incompatible with Strava's developer terms, which is why the project was wound down rather than submitted for approval:
+
+- **Showing other athletes' data is prohibited.** Strava's [API Agreement](https://www.strava.com/legal/api) (effective 2024-11-11) requires that *"Strava Data provided by a specific user can only be displayed or disclosed in your Developer Application to that user"* — even for data that is publicly viewable. The whole point of the club view (comparing members to each other) violates this.
+- **The endpoints are going away.** The club feature relies on the Club Members / Club Activities endpoints, which Strava is deprecating on **2026-09-01**.
+- **Data retention.** Activities are stored in PostgreSQL indefinitely; Strava's [API Policy](https://www.strava.com/legal/api_policy) states *"You may not retain Strava Data in your cache for longer than seven (7) days."*
+- **Branding.** The product name contains "Strava" (prohibited by the [Brand Guidelines](https://developers.strava.com/guidelines/)) and the UI does not use the official "Connect with Strava" button or "Powered by Strava" attribution.
+
+The app only ever ran in Strava's "Single Player Mode" (only the owner's account could connect), so no other users' data was exposed in practice. These findings are recorded in [EPIC-11 — Strava API Compliance](docs/epics/backlog.md). The lesson, kept here on purpose: for any integration, the platform's **legal agreement and policy** — not just the API docs — decide which features are allowed, and those terms can change after you build.
 
 ## License
 

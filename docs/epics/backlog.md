@@ -284,6 +284,24 @@ Data-access tasks are verified with integration tests against a real PostgreSQL 
 
 ---
 
+### EPIC-11 — Strava API Compliance
+
+**Purpose:** Bring the app into compliance with Strava's Brand Guidelines and Developer Program requirements so it can pass review and be approved for athlete capacity beyond Single Player Mode (current limit: 1 athlete).
+
+**Why it exists (system evolution order):** The app is deployed and the deauth webhook is live, but it is still in Single Player Mode — only the owner's Strava account can connect. Raising the athlete limit requires submitting the Developer Program form, which is reviewed against Strava's Brand Guidelines. Three known gaps block approval: a custom (non-official) "Connect with Strava" button, missing "Powered by Strava" attribution on data views, and the product name containing "Strava". This epic closes those gaps before submission.
+
+**Included:**
+- Replace the custom login button with Strava's official "Connect with Strava" button asset
+- Add the official "Powered by Strava" attribution to every view that displays Strava data
+- Resolve use of "Strava" in the user-facing product name per the Brand Guidelines
+
+**Excluded:**
+- Submitting the Developer Program form itself (operator action, not code)
+- The rate-limit / athlete-capacity increase request (depends on review outcome)
+- Cold-start (`min_machines_running`) and `STRAVA_WEBHOOK_SUBSCRIPTION_ID` operational hardening (tracked separately)
+
+---
+
 ---
 
 ## TASK BREAKDOWN
@@ -1957,3 +1975,76 @@ The configured subscription ID is **optional**: the value only exists after the 
 **Complexity:** Small
 
 **Testability:** A visitor to the GitHub repo page understands what the app does without reading any code. All doc links resolve. Screenshots render in the GitHub markdown preview.
+
+---
+
+### EPIC-11 — Strava API Compliance
+
+---
+
+#### TASK-11.1
+
+**Name:** Replace the custom login button with the official "Connect with Strava" button
+
+**Goal:** The login page uses Strava's official "Connect with Strava" button artwork, satisfying the Brand Guidelines requirement that the Developer Program review explicitly checks.
+
+**Context:** `frontend/src/pages/LoginPage.tsx:44-46` renders a self-styled `<button class="btn btn--primary">Connect with Strava</button>` alongside a custom diamond SVG mark. Strava's Brand Guidelines (https://developers.strava.com/guidelines/) require the official downloadable button asset for the OAuth entry point, and the review form asks for a screenshot showing it; a custom button is a common rejection reason. The OAuth target is already compliant — `postOAuthAuthorize()` redirects to Strava's `/oauth/authorize` via the backend — so only the visual asset and its link wrapping change, not the flow.
+
+**Input:** `frontend/src/pages/LoginPage.tsx`, the official button asset from the Brand Guidelines, `frontend/src/assets/`
+
+**Output:**
+- Official "Connect with Strava" button asset added under `frontend/src/assets/` (include the variant that matches the active theme; the app has dark/light mode)
+- `LoginPage.tsx` — replace the custom `<button>` with the official button image while preserving the existing `handleConnect` / `postOAuthAuthorize` behaviour and the loading/disabled states
+- Accessible labelling (alt text / `aria-label`) and existing error states preserved
+
+**Dependencies:** None
+
+**Complexity:** Small
+
+**Testability:** The login page renders the official Strava button artwork (not a CSS button); clicking it still calls `postOAuthAuthorize` and redirects to Strava; loading and error states behave as before. Result is a screenshot suitable for the review form.
+
+---
+
+#### TASK-11.2
+
+**Name:** Add "Powered by Strava" attribution to all views displaying Strava data
+
+**Goal:** Every view that renders Strava-sourced data shows the official "Powered by Strava" logo, per the Brand Guidelines.
+
+**Context:** The Brand Guidelines require a "Powered by Strava" (or "Compatible with Strava") logo wherever Strava data is displayed, and the review form asks for screenshots of those views with the logo visible. The app's data-bearing views are `frontend/src/pages/DashboardPage.tsx` (goal progress, pace chart, badges — all derived from Strava activities) and `frontend/src/pages/ClubsPage.tsx` (club member progress). No attribution is currently present on either.
+
+**Input:** `frontend/src/pages/DashboardPage.tsx`, `frontend/src/pages/ClubsPage.tsx`, the official "Powered by Strava" logo asset, `frontend/src/assets/`
+
+**Output:**
+- Official "Powered by Strava" logo asset(s) (light/dark to match the theme) added under `frontend/src/assets/`
+- A small shared component (e.g. `PoweredByStrava`) placed on the Dashboard and Clubs views where Strava data appears
+- Logo displayed at an approved size / clear-space per the guidelines
+
+**Dependencies:** None
+
+**Complexity:** Small
+
+**Testability:** Dashboard and Clubs pages each display the official "Powered by Strava" logo, rendering correctly in both light and dark themes. Results are screenshots suitable for the review form.
+
+---
+
+#### TASK-11.3
+
+**Name:** Resolve use of "Strava" in the product name per the Brand Guidelines
+
+**Goal:** The user-facing product name no longer contains "Strava", complying with the Brand Guidelines and removing a confirmed review-rejection trigger.
+
+**Context:** The product name is `APP_NAME = 'Strava Goal Visualizer'` (`frontend/src/config/site.ts:4`), shown across the UI and legal copy, and echoed in the FastAPI title `"Strava Goal Visualizer API"` (`backend/main.py`) and the Fly app id / URL (`strava-goal-visualizer.fly.dev`). Strava's Brand Guidelines (confirmed 2026-06-19 at https://developers.strava.com/guidelines/) state verbatim: *"You must not use the Strava name in your application name or make any other suggestion that your application is an official Strava app or is otherwise endorsed by Strava."* A rename is therefore **required**, not optional. Plain-text interoperability references are still permitted using only the approved phrases "Powered by Strava" / "Compatible with Strava" (see TASK-11.2), so a tagline like "Compatible with Strava" can replace the name's branding role. The minimal compliant change is the user-facing product name; the Fly app id and `*.fly.dev` URL are operator concerns (renaming a deployed app is disruptive) and are flagged separately rather than changed here.
+
+**Input:** `frontend/src/config/site.ts`, UI/legal copy referencing the name, `backend/main.py` (FastAPI title)
+
+**Output:**
+- A new compliant `APP_NAME` (no "Strava") in `frontend/src/config/site.ts`, propagated through all UI and legal copy that references it
+- `backend/main.py` FastAPI title updated to drop "Strava"
+- The Fly app id and `*.fly.dev` URL flagged as a separate operator decision (not changed as part of this task)
+
+**Dependencies:** None
+
+**Complexity:** Small
+
+**Testability:** No user-facing surface (UI, legal pages, API title) contains "Strava" in the product name; any remaining Strava references are plain-text interoperability statements using the approved phrases; the app still builds. The new name choice itself is an open decision for the operator.
