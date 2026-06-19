@@ -106,13 +106,6 @@ export default function ClubsPage({ currentAthleteId }: Props) {
         </div>
       </div>
 
-      {/* Disclaimer — always visible once clubs are loaded */}
-      {clubsStatus === 'loaded' && clubs.length > 0 && (
-        <p className="status-msg status-msg--warning">
-          This club view shows members who have connected this app. It is a
-          progress visualization, not a competition leaderboard.
-        </p>
-      )}
 
       {/* Members card */}
       {selectedClubId !== null && clubs.length > 0 && (

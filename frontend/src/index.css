@@ -730,6 +730,8 @@ button {
   color: var(--text-2);
   white-space: nowrap;
   flex-shrink: 0;
+  width: 13rem;
+  text-align: right;
 }
 
 /* ── Privacy Page ────────────────────────────────────── */

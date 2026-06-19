@@ -75,6 +75,10 @@ export default function ClubPaceChart({ members, currentAthleteId }: Props) {
     }
   }
 
+  const allPcts = Array.from(memberDataMap.values()).flatMap(pts => pts.map(p => p.pct))
+  const maxPct = allPcts.length > 0 ? Math.max(...allPcts) : 0
+  const yMax = Math.min(Math.ceil(Math.max(maxPct, 100) / 5) * 5, 125)
+
   // Custom dot: renders a filled circle + name label at the last data point of each member's series
   function renderEndLabel(athleteId: number, displayName: string, color: string) {
     const data = memberDataMap.get(athleteId) ?? []
@@ -102,8 +106,8 @@ export default function ClubPaceChart({ members, currentAthleteId }: Props) {
   }
 
   return (
-    <ResponsiveContainer width="100%" height={260}>
-      <LineChart margin={{ top: 20, right: 90, bottom: 0, left: 0 }}>
+    <ResponsiveContainer width="100%" height={360}>
+      <LineChart margin={{ top: 20, right: 90, bottom: 0, left: 4 }}>
         <CartesianGrid strokeDasharray="3 3" stroke={border} vertical={false} />
         <XAxis
           dataKey="day"
@@ -117,11 +121,11 @@ export default function ClubPaceChart({ members, currentAthleteId }: Props) {
         />
         <YAxis
           tickFormatter={(v: number) => `${v}%`}
-          domain={[0, 100]}
+          domain={[0, yMax]}
           tick={{ fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fill: text3 }}
           axisLine={false}
           tickLine={false}
-          width={44}
+          width={52}
         />
         <Tooltip
           contentStyle={{
