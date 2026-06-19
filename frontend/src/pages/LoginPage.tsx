@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { postOAuthAuthorize } from '../api/client'
 import GdprFooter from '../components/GdprFooter'
+import { APP_NAME } from '../config/site'
 
 interface Props {
   oauthError: string | null
@@ -30,7 +31,7 @@ export default function LoginPage({ oauthError }: Props) {
             <polygon points="13,1 25,13 13,25 1,13" fill="var(--accent)" />
           </svg>
         </div>
-        <h1 className="login-title">Strava Goal Visualizer</h1>
+        <h1 className="login-title">{APP_NAME}</h1>
         <p className="login-subtitle">Track your yearly running goal.</p>
         {(oauthError === 'auth_failed' || oauthError === 'strava_error') && (
           <p className="login-error" role="alert">

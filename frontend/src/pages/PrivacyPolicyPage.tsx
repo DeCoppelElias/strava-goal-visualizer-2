@@ -1,5 +1,5 @@
 import GdprFooter from '../components/GdprFooter'
-import { SUPPORT_EMAIL } from '../config/site'
+import { OPERATOR_NAME, SUPPORT_EMAIL } from '../config/site'
 
 export default function PrivacyPolicyPage() {
   return (
@@ -22,7 +22,7 @@ export default function PrivacyPolicyPage() {
           <div className="card__body">
             <div className="legal-section">
               <p>
-                This service is operated by <strong>Elias De Coppel</strong> as an individual
+                This service is operated by <strong>{OPERATOR_NAME}</strong> as an individual
                 developer. You can reach us at{' '}
                 <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
               </p>

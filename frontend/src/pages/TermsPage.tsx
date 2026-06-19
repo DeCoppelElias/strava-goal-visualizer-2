@@ -1,5 +1,5 @@
 import GdprFooter from '../components/GdprFooter'
-import { SUPPORT_EMAIL } from '../config/site'
+import { APP_NAME, OPERATOR_NAME, SUPPORT_EMAIL } from '../config/site'
 
 export default function TermsPage() {
   return (
@@ -23,9 +23,9 @@ export default function TermsPage() {
             <div className="legal-section">
               <h3>What it is</h3>
               <p>
-                Strava Goal Visualizer is a personal running goal tracker that reads your authorized
-                Strava data to help you visualize your yearly running progress. It is operated by{' '}
-                <strong>Elias De Coppel</strong> as an individual developer, not as a business.
+                {APP_NAME} is a personal running goal tracker that reads your authorized Strava data
+                to help you visualize your yearly running progress. It is operated by{' '}
+                <strong>{OPERATOR_NAME}</strong> as an individual developer, not as a business.
               </p>
             </div>
             <div className="legal-section">
