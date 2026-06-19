@@ -266,6 +266,7 @@ This is the single, non-negotiable filter that governs all business logic in the
 - On receipt, the backend attempts to revoke stored tokens, erase all user data, and invalidate the active session.
 - **Failure handling:** If the callback fails, the error is logged for operator manual resolution.
 - This satisfies Strava's platform requirement and GDPR right to erasure.
+- **Webhook authenticity:** Strava does not sign webhook events — there is no HMAC or per-event secret. A `subscription_id` filter provides a cheap speed bump: every genuine Strava event carries the `subscription_id` of the registered push subscription; events with a mismatched or absent `subscription_id` are logged and rejected with `200 OK` (no deletion). This is **not** a real authentication boundary — `subscription_id` is a guessable incrementing integer. **Residual risk:** a determined attacker who knows the victim's athlete ID and the subscription ID could trigger erasure; data is re-syncable on next login and no data exfiltration occurs. The alternative (verifying the deauth by calling Strava with the stored token before deleting) was rejected: a transient Strava failure during a genuine deauth would skip a required erasure, a worse GDPR outcome.
 
 ### 9.4 Retention
 
@@ -292,7 +293,7 @@ Every endpoint enforces the following rules. "Own" means the resource belongs to
 | `GET /dashboard/club/{club_id}` | Authenticated athlete | Must be a member of club `{club_id}` |
 | `POST /privacy/export` | Authenticated athlete | Own data only |
 | `POST /privacy/delete` | Authenticated athlete | Own data only |
-| `POST /strava/deauth` | Strava server (verified by Strava signature) | — |
+| `POST /strava/deauth` | Strava server (no signature; filtered by `subscription_id` when configured) | — |
 
 No endpoint permits an authenticated user to read, write, or sync another user's data.
 

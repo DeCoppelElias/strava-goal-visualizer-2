@@ -54,6 +54,7 @@ class StravaWebhookPayload(BaseModel):
     aspect_type: str
     owner_id: int
     updates: dict[str, str] = {}
+    subscription_id: int | None = None
 
 
 class DeauthResponse(BaseModel):

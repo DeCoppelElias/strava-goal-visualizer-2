@@ -37,7 +37,18 @@ Strava returns:
 {"id": 12345}
 ```
 
-Save this subscription ID — you will need it to view or delete the subscription later.
+Copy the returned `id` into your production environment:
+
+```bash
+# In your Fly.io secrets (or equivalent):
+STRAVA_WEBHOOK_SUBSCRIPTION_ID=12345
+```
+
+This activates the `subscription_id` filter on `POST /strava/deauth`: events whose
+`subscription_id` does not match are rejected with `200 OK` and no deletion occurs.
+If the ID is ever lost, recover it via the GET in Step 2.
+
+You will also need it to view or delete the subscription later.
 
 ### Common errors
 

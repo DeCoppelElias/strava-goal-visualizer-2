@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import httpx
 from backend.shared.db import get_db
@@ -163,5 +163,60 @@ async def test_deauth_session_invalidated_after_deletion(db: AsyncSession) -> No
                     cookies={"session": f"user_id={user.id}"},
                 )
         assert me_response.status_code in (401, 403, 422)
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+
+async def test_deauth_filter_active_matching_id_deletes(db: AsyncSession) -> None:
+    """Filter active + matching subscription_id → user deleted, event logged."""
+    from backend.main import app
+    from backend.shared.db import get_db
+
+    user = await _seed_user(db, strava_athlete_id=77003)
+    strava_id = user.strava_athlete_id
+
+    mock_settings = MagicMock()
+    mock_settings.strava_webhook_subscription_id = 42
+
+    async def override_get_db():
+        yield db
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        with (
+            patch("backend.main._run_migrations"),
+            patch("backend.privacy.router.settings", mock_settings),
+        ):
+            async with httpx.AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                response = await client.post(
+                    "/strava/deauth",
+                    json={
+                        "object_type": "athlete",
+                        "aspect_type": "update",
+                        "owner_id": strava_id,
+                        "object_id": strava_id,
+                        "updates": {"authorized": "false"},
+                        "event_time": 1516126040,
+                        "subscription_id": 42,
+                    },
+                )
+        assert response.status_code == 200
+
+        await db.flush()
+
+        gone = (
+            await db.execute(select(User).where(User.strava_athlete_id == strava_id))
+        ).scalar_one_or_none()
+        assert gone is None
+
+        events = (
+            (await db.execute(select(DeletionEvent).where(DeletionEvent.user_id == strava_id)))
+            .scalars()
+            .all()
+        )
+        assert len(events) == 1
+        assert events[0].reason == "strava_deauth"
     finally:
         app.dependency_overrides.pop(get_db, None)

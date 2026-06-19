@@ -56,6 +56,15 @@ async def strava_deauth_webhook(
     db: AsyncSession = Depends(get_db),  # noqa: B008
     privacy_service: PrivacyService = Depends(get_privacy_service),  # noqa: B008
 ) -> DeauthResponse:
+    configured_id = settings.strava_webhook_subscription_id
+    if configured_id is not None and payload.subscription_id != configured_id:
+        logger.warning(
+            "Deauth webhook rejected: subscription_id mismatch (got %s, expected %s)",
+            payload.subscription_id,
+            configured_id,
+        )
+        return DeauthResponse()
+
     if payload.object_type != "athlete" or payload.updates.get("authorized") != "false":
         return DeauthResponse()
 

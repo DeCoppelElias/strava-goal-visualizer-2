@@ -307,3 +307,139 @@ def test_deauth_post_rate_limit_returns_429():
         app.dependency_overrides.pop(get_db, None)
         app.dependency_overrides.pop(get_privacy_service, None)
         limiter.reset()
+
+
+# ---- subscription_id filter tests ----
+
+
+def _active_settings(subscription_id: int):
+    """Return a mock settings object with the filter enabled."""
+    from unittest.mock import MagicMock
+
+    mock = MagicMock()
+    mock.strava_webhook_subscription_id = subscription_id
+    return mock
+
+
+def test_deauth_filter_active_matching_id_deletes_user():
+    from unittest.mock import patch
+
+    from backend.main import app
+
+    known_user = User(id=7, strava_athlete_id=12345)
+    mock_svc = MagicMock()
+    mock_svc.delete_user_data = AsyncMock()
+
+    app.dependency_overrides[get_db] = _make_mock_db(user=known_user)
+    app.dependency_overrides[get_privacy_service] = lambda: mock_svc
+    try:
+        with (
+            patch("backend.main._run_migrations"),
+            patch("backend.privacy.router.settings", _active_settings(99)),
+            TestClient(app) as client,
+        ):
+            response = client.post(
+                "/strava/deauth",
+                json={**_DEAUTH_PAYLOAD, "subscription_id": 99},
+            )
+        assert response.status_code == 200
+        mock_svc.delete_user_data.assert_called_once()
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+        app.dependency_overrides.pop(get_privacy_service, None)
+
+
+def test_deauth_filter_active_mismatched_id_no_deletion(caplog):
+    import logging
+    from unittest.mock import patch
+
+    from backend.main import app
+
+    known_user = User(id=7, strava_athlete_id=12345)
+    mock_svc = MagicMock()
+    mock_svc.delete_user_data = AsyncMock()
+
+    app.dependency_overrides[get_db] = _make_mock_db(user=known_user)
+    app.dependency_overrides[get_privacy_service] = lambda: mock_svc
+    try:
+        with (
+            patch("backend.main._run_migrations"),
+            patch("backend.privacy.router.settings", _active_settings(99)),
+            caplog.at_level(logging.WARNING),
+            TestClient(app) as client,
+        ):
+            response = client.post(
+                "/strava/deauth",
+                json={**_DEAUTH_PAYLOAD, "subscription_id": 999},
+            )
+        assert response.status_code == 200
+        mock_svc.delete_user_data.assert_not_called()
+        assert "mismatch" in caplog.text.lower()
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+        app.dependency_overrides.pop(get_privacy_service, None)
+
+
+def test_deauth_filter_active_missing_id_no_deletion(caplog):
+    import logging
+    from unittest.mock import patch
+
+    from backend.main import app
+
+    known_user = User(id=7, strava_athlete_id=12345)
+    mock_svc = MagicMock()
+    mock_svc.delete_user_data = AsyncMock()
+
+    payload_no_sub_id = {
+        "object_type": "athlete",
+        "aspect_type": "update",
+        "owner_id": 12345,
+        "object_id": 12345,
+        "updates": {"authorized": "false"},
+        "event_time": 1516126040,
+    }
+
+    app.dependency_overrides[get_db] = _make_mock_db(user=known_user)
+    app.dependency_overrides[get_privacy_service] = lambda: mock_svc
+    try:
+        with (
+            patch("backend.main._run_migrations"),
+            patch("backend.privacy.router.settings", _active_settings(99)),
+            caplog.at_level(logging.WARNING),
+            TestClient(app) as client,
+        ):
+            response = client.post("/strava/deauth", json=payload_no_sub_id)
+        assert response.status_code == 200
+        mock_svc.delete_user_data.assert_not_called()
+        assert "mismatch" in caplog.text.lower()
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+        app.dependency_overrides.pop(get_privacy_service, None)
+
+
+def test_deauth_filter_unset_deletes_regardless_of_payload_id():
+    """When STRAVA_WEBHOOK_SUBSCRIPTION_ID is unset, filter is skipped entirely."""
+    from unittest.mock import patch
+
+    from backend.main import app
+
+    known_user = User(id=7, strava_athlete_id=12345)
+    mock_svc = MagicMock()
+    mock_svc.delete_user_data = AsyncMock()
+
+    app.dependency_overrides[get_db] = _make_mock_db(user=known_user)
+    app.dependency_overrides[get_privacy_service] = lambda: mock_svc
+    try:
+        with (
+            patch("backend.main._run_migrations"),
+            TestClient(app) as client,
+        ):
+            response = client.post(
+                "/strava/deauth",
+                json={**_DEAUTH_PAYLOAD, "subscription_id": 9999},
+            )
+        assert response.status_code == 200
+        mock_svc.delete_user_data.assert_called_once()
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+        app.dependency_overrides.pop(get_privacy_service, None)
