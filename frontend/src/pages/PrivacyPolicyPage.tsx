@@ -1,4 +1,5 @@
 import GdprFooter from '../components/GdprFooter'
+import { SUPPORT_EMAIL } from '../config/site'
 
 export default function PrivacyPolicyPage() {
   return (
@@ -23,7 +24,7 @@ export default function PrivacyPolicyPage() {
               <p>
                 This service is operated by <strong>Elias De Coppel</strong> as an individual
                 developer. You can reach us at{' '}
-                <a href="mailto:elias.decoppel@gmail.com">elias.decoppel@gmail.com</a>.
+                <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
               </p>
             </div>
           </div>
@@ -136,7 +137,7 @@ export default function PrivacyPolicyPage() {
             <div className="legal-section">
               <p>
                 For any questions about your data, contact{' '}
-                <a href="mailto:elias.decoppel@gmail.com">elias.decoppel@gmail.com</a>. If this
+                <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>. If this
                 policy changes, the "Last updated" date at the top of this page will be updated.
                 Continued use of the app after changes constitutes acceptance.
               </p>

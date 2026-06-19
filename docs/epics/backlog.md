@@ -1548,14 +1548,14 @@ Potentially think about whether syncing should immediatly remove all current mem
 
 **Context:** `GdprFooter` already renders "Privacy Policy" and "Terms of Service" links pointing to `#`. This task replaces those with real routes and writes the full content for both pages. The app has no React Router — routing is done via conditional rendering in `App.tsx`. The same pattern applies here: check `window.location.pathname` before the auth check so both pages are publicly accessible without login. Vite dev server already serves `index.html` for all paths, so no server config change is needed.
 
-**Operator details:** Elias De Coppel · elias.decoppel@gmail.com · Governing law: Belgium
+**Operator details:** Elias De Coppel · goalvisualizer.support@gmail.com · Governing law: Belgium
 
 **Input:** `frontend/src/App.tsx`, `frontend/src/components/GdprFooter.tsx`
 
 **Output:**
 
 - `frontend/src/pages/PrivacyPolicyPage.tsx` — static page with the following sections:
-  1. **Who we are** — operated by Elias De Coppel (elias.decoppel@gmail.com), individual developer
+  1. **Who we are** — operated by Elias De Coppel (goalvisualizer.support@gmail.com), individual developer
   2. **What we collect** — Strava athlete ID; running activities (name, distance, date — only `sport_type = 'Run'`; all other activity types are discarded at ingest and never stored); yearly running goal; Strava club memberships (names and IDs); one session cookie for authentication only
   3. **What we never collect** — OAuth tokens are encrypted at rest (Fernet) and never stored in readable form or logged; heart rate, GPS routes, power, cadence, or any health metrics; analytics or advertising cookies; any data not listed above
   4. **Why we collect it (legal basis)** — you explicitly authorized this app via Strava OAuth; purpose is solely to visualize your running goal progress and club member progress
@@ -1563,7 +1563,7 @@ Potentially think about whether syncing should immediatly remove all current mem
   6. **Your rights** — download all your data via the Export button on the Privacy page; delete all your data permanently via Delete Account; withdraw consent by revoking in Strava connected apps settings
   7. **Security** — tokens encrypted at rest with Fernet; session cookies are HttpOnly, Secure, SameSite=Lax; no user data transmitted to any third party other than described below
   8. **Third parties** — Strava Inc. only (data source and OAuth provider); no advertising networks, analytics providers, or data brokers; we do not sell, rent, or share your data
-  9. **Contact** — elias.decoppel@gmail.com
+  9. **Contact** — goalvisualizer.support@gmail.com
   10. **Changes** — "Last updated" date updated on any change; continued use constitutes acceptance
   - Page includes a "← Back to app" link (`window.history.back()`)
 
@@ -1576,7 +1576,7 @@ Potentially think about whether syncing should immediatly remove all current mem
   6. **Limitation of liability** — developer not liable for any direct, indirect, or consequential damages; as this is a free service, maximum liability is €0
   7. **Termination** — you can delete your account and all data at any time via the Privacy page; we reserve the right to revoke access for ToS violations; we reserve the right to shut down the service permanently at any time, in which case all stored user data will be deleted
   8. **Governing law** — laws of Belgium
-  9. **Contact and changes** — elias.decoppel@gmail.com; "Last updated" date updated on any change; continued use after changes constitutes acceptance
+  9. **Contact and changes** — goalvisualizer.support@gmail.com; "Last updated" date updated on any change; continued use after changes constitutes acceptance
   - Page includes a "← Back to app" link (`window.history.back()`)
 
 - `frontend/src/App.tsx` — add path checks at the top of the component, before the auth state check:

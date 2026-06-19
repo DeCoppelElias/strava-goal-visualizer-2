@@ -1,4 +1,5 @@
 import GdprFooter from '../components/GdprFooter'
+import { SUPPORT_EMAIL } from '../config/site'
 
 export default function TermsPage() {
   return (
@@ -130,7 +131,7 @@ export default function TermsPage() {
               <h3>Contact and changes</h3>
               <p>
                 For any questions, contact{' '}
-                <a href="mailto:elias.decoppel@gmail.com">elias.decoppel@gmail.com</a>. We may
+                <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>. We may
                 update these terms at any time. The "Last updated" date at the top of this page will
                 reflect the most recent change. Continued use after changes constitutes acceptance.
               </p>
