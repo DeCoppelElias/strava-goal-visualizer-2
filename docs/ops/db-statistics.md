@@ -37,10 +37,18 @@ distance, clubs):
 docker compose exec -T db psql -U postgres -d strava_dev -f - < scripts/stats.sql
 ```
 
+```powershell
+Get-Content scripts/stats.sql -Raw | docker compose exec -T db psql -U postgres -d strava_dev
+```
+
 **Production (Fly.io):**
 
 ```bash
 fly postgres connect -a <db-app> -d <db-name> < scripts/stats.sql
+```
+
+```powershell
+Get-Content scripts/stats.sql -Raw | fly postgres connect -a <db-app> -d <db-name>
 ```
 
 Replace `<db-app>` with your Postgres app name (`fly apps list`) and `<db-name>`
@@ -86,17 +94,74 @@ fly proxy 5432 -a <db-app>      # forwards localhost:5432 to the prod DB
 
 ### Read-only role (recommended)
 
-Run statistics through a role that cannot mutate data:
+A `stats_reader` role can run every query in this doc but cannot mutate data, so
+a fat-fingered `UPDATE`/`DELETE` while poking around is impossible. It is **not
+deployment-specific** — the same steps work locally and in production. It matters
+most against production (the local Docker DB is a throwaway), so creating it
+locally is optional.
+
+**Step 1 — Create the role (one time, as an admin/superuser).**
+
+The `CREATE ROLE` / `GRANT` statements must be run by a role that already has
+those privileges — i.e. the `postgres` superuser, *not* `stats_reader` itself.
+Connect as admin, then run the block once:
+
+```bash
+# Local: connect as the postgres superuser
+docker compose exec db psql -U postgres -d strava_dev
+
+# Production: connect as the postgres superuser
+fly postgres connect -a <db-app> -d <db-name>
+```
 
 ```sql
 CREATE ROLE stats_reader WITH LOGIN PASSWORD 'choose-a-strong-password';
 GRANT CONNECT ON DATABASE <db-name> TO stats_reader;
 GRANT USAGE ON SCHEMA public TO stats_reader;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO stats_reader;
+-- Make future tables (e.g. after a migration) readable too:
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO stats_reader;
 ```
 
-Then connect with `stats_reader` instead of the app's role.
+`SELECT ON ALL TABLES` grants on tables that exist *now*; the `ALTER DEFAULT
+PRIVILEGES` line covers tables added later. Run it once — it persists in the
+database, so you don't recreate the role on every session.
+
+> One caveat: `ALTER DEFAULT PRIVILEGES` only applies to tables created by the
+> role that ran it. If migrations create tables as `postgres` (the usual case),
+> run the `ALTER DEFAULT PRIVILEGES` line while connected as `postgres` and
+> you're covered. After a migration that adds tables created by a *different*
+> role, re-run the `GRANT SELECT ON ALL TABLES` line to catch up.
+
+**Step 2 — Connect as `stats_reader` to run stats.**
+
+Use the role's own credentials instead of the app/admin role:
+
+```bash
+# Local
+docker compose exec db psql -U stats_reader -d strava_dev
+
+# Production
+fly proxy 5432 -a <db-app>      # in one terminal
+psql "postgresql://stats_reader:<password>@localhost:5432/<db-name>"   # in another
+```
+
+To run the curated summary through it, pipe `scripts/stats.sql` into either
+connection exactly as shown in **Quick glance** above (just swap `-U postgres`
+for `-U stats_reader`).
+
+---
+
+## Running your own queries
+
+The catalogue below is plain SQL — run it three ways:
+
+- **Interactive:** open a session (`docker compose exec db psql -U postgres -d
+  strava_dev` locally, or `fly postgres connect -a <db-app> -d <db-name>` in
+  prod), then type queries ending in `;`. `\dt` lists tables, `\d <table>`
+  describes one, `\q` quits.
+- **One-off:** append `-c "SELECT ...;"` to either connect command.
+- **From a file:** pipe it in, as shown in **Quick glance** above.
 
 ---
 
