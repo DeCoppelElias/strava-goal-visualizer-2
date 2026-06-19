@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import sys
 from dataclasses import dataclass
 
@@ -45,9 +46,23 @@ class Settings:
     strava_webhook_subscription_id: int | None = None
 
 
+def _asyncpg_url(url: str) -> str:
+    # Fly Postgres sets DATABASE_URL as postgres:// or postgresql://; asyncpg needs postgresql+asyncpg://
+    url = url.replace("postgresql://", "postgresql+asyncpg://", 1).replace(
+        "postgres://", "postgresql+asyncpg://", 1
+    )
+    # asyncpg does not accept sslmode; translate sslmode=disable → ssl=disable so
+    # asyncpg does not attempt a TLS handshake (Fly internal network rejects it).
+    # Any other sslmode variant is stripped and asyncpg uses its default.
+    url = re.sub(r"([?&])sslmode=disable", r"\1ssl=disable", url)
+    url = re.sub(r"\?sslmode=[^&]*&", "?", url)
+    url = re.sub(r"[?&]sslmode=[^&]*", "", url)
+    return url
+
+
 settings = Settings(
     frontend_origin=os.environ["FRONTEND_ORIGIN"],
-    database_url=os.environ["DATABASE_URL"],
+    database_url=_asyncpg_url(os.environ["DATABASE_URL"]),
     token_encryption_key=os.environ["TOKEN_ENCRYPTION_KEY"],
     strava_client_id=os.environ["STRAVA_CLIENT_ID"],
     strava_client_secret=os.environ["STRAVA_CLIENT_SECRET"],

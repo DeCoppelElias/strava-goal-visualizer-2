@@ -28,13 +28,17 @@ Browser → https://<app-name>.fly.dev
 ## Step 1: Create the Fly.io app and database
 
 ```bash
-# From the repo root — answer the interactive prompts:
-#   App name: choose a unique name (e.g. strava-goal-visualizer)
-#   Region:   pick the closest to your users
-#   Deploy now? No
+# From the repo root — answer the interactive prompts as follows:
+#   App name:                     choose a unique name (e.g. strava-goal-visualizer)
+#   Region:                       pick the closest to your users
+#   Overwrite fly.toml?           No — keep the existing configured file
+#   Create .dockerignore?         Yes
 fly launch --no-deploy
 
 # Create a Fly Postgres cluster and attach it (sets DATABASE_URL secret automatically)
+# Interactive prompts: same region as the app; "Development - Single node" config;
+# "Scale to zero after one hour" is fine for low-traffic deployments.
+# Recommended name: <app-name>-postgres (e.g. strava-goal-visualizer-postgres)
 fly postgres create --name <db-app-name>
 fly postgres attach <db-app-name>
 ```
@@ -47,13 +51,14 @@ Update `fly.toml` with your chosen app name (replace both `<app-name>` placehold
 
 ## Step 2: Update the Strava redirect URI
 
-Before your first deploy, go to [strava.com/settings/api](https://www.strava.com/settings/api) and add:
+Before your first deploy, go to [strava.com/settings/api](https://www.strava.com/settings/api) and set:
 
-```
-https://<app-name>.fly.dev/oauth/callback
-```
+| Field | Value |
+|---|---|
+| **Website** | `https://<app-name>.fly.dev` |
+| **Authorization Callback Domain** | `<app-name>.fly.dev` |
 
-to the **Authorization Callback Domain** field. The OAuth login flow will fail until this is set.
+The callback domain is the domain only — no `https://` prefix and no `/oauth/callback` path. The OAuth login flow will fail until this is set.
 
 ---
 
@@ -83,6 +88,8 @@ fly secrets set \
   TOKEN_ENCRYPTION_KEY=<generated-above> \
   STRAVA_WEBHOOK_VERIFY_TOKEN=<generated-above>
 ```
+
+> **PowerShell users:** replace `\` line continuations with `` ` `` (backtick), or put the whole command on one line.
 
 `FRONTEND_ORIGIN` and `SESSION_COOKIE_SECURE` are already set in `fly.toml` `[env]` — do not add them here.
 `DATABASE_URL` was set automatically by `fly postgres attach` — do not override it.
