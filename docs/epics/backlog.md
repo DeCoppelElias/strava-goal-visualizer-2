@@ -1909,7 +1909,7 @@ The configured subscription ID is **optional**: the value only exists after the 
 
 ---
 
-#### TASK-10.1
+#### TASK-10.1 ✅
 
 **Name:** Write production deployment guide
 
