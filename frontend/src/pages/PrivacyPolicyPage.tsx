@@ -73,9 +73,11 @@ export default function PrivacyPolicyPage() {
               <h3>How long we keep it</h3>
               <p>
                 We keep your data for as long as you have an account. If you delete your account via
-                the Privacy page, all your data is permanently erased immediately. If you revoke
-                this app's access in your Strava settings, Strava notifies us and we automatically
-                erase all your data.
+                the Privacy page, all your data is permanently erased immediately — a minimal
+                deletion record (a pseudonymous identifier, timestamp, and reason) is retained
+                solely as legal evidence that the erasure occurred. If you revoke this app's access
+                in your Strava settings, Strava notifies us and we automatically erase all your
+                data.
               </p>
             </div>
           </div>
