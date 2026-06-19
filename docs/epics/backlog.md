@@ -1754,6 +1754,50 @@ Also consider changing the email to a dedicated support email
 
 ---
 
+#### TASK-8.4 ✅
+
+**Name:** Production Dockerfile (multi-stage)
+
+**Goal:** A single multi-stage `Dockerfile` at the repo root that builds the React frontend and packages it with the FastAPI backend so Fly.io deploys one container serving both the API and the static frontend.
+
+**Context:** Fly.io deploys a single Docker image. The existing `backend/Dockerfile` only runs the Python backend; `frontend/Dockerfile` runs a dev server. This new root Dockerfile has two stages: Node 22 builds `frontend/dist/` with `VITE_API_BASE_URL=""` (relative API calls); Python copies the built files in and runs uvicorn. Local dev (docker-compose) is unchanged — it keeps using the two existing Dockerfiles.
+
+**Input:** `backend/Dockerfile` (reference for the Python stage), `frontend/Dockerfile` (reference for prod build), `pyproject.toml`
+
+**Output:**
+- `Dockerfile` (repo root) — two-stage build: Node 22 frontend build, Python 3.12-slim backend runtime with `frontend/dist/` copied in
+- `pyproject.toml` — add `aiofiles>=24.0` to `backend` group, `types-aiofiles>=24.0` to `dev` group
+- `backend/main.py` — mount `/assets` as `StaticFiles`; catch-all `GET /{full_path:path}` returns `frontend/dist/index.html` (guarded by `if _DIST.is_dir()` so local dev is unaffected)
+
+**Dependencies:** None
+
+**Complexity:** Small
+
+**Testability:** `docker build -t sgv-prod-test .` completes. Running the image with the compose DB: `curl localhost:8001/health` → `{"status":"ok"}`; `curl localhost:8001/` → React app HTML; `curl localhost:8001/any-unknown-path` → same HTML (SPA fallback). `make ci` passes.
+
+---
+
+#### TASK-8.5 ✅
+
+**Name:** Fly.io app configuration (`fly.toml`)
+
+**Goal:** A `fly.toml` at the repo root so `fly deploy` can build and deploy the app without any manual Fly.io dashboard configuration.
+
+**Context:** `fly launch --no-deploy` generates a scaffold; this task documents and commits the customised version with correct health check path (`/health`), machine sizing (256 MB shared CPU), HTTPS enforcement, and the non-secret env vars (`SESSION_COOKIE_SECURE=true`, `FRONTEND_ORIGIN`). The file uses `<app-name>` placeholders — operator replaces with their chosen Fly app name before deploying.
+
+**Input:** Fly.io v2 machines format reference
+
+**Output:**
+- `fly.toml` (repo root) — `[build]`, `[env]` (non-secrets only), `[http_service]` on port 8000 with HTTPS forced and health check at `/health`, `[[vm]]` 256 MB shared CPU
+
+**Dependencies:** TASK-8.4
+
+**Complexity:** Small
+
+**Testability:** `fly deploy` succeeds and the app is reachable. `curl https://<app-name>.fly.dev/health` returns `{"status":"ok"}`.
+
+---
+
 ### EPIC-9 — Security & Privacy Hardening
 
 ---
