@@ -57,7 +57,7 @@ app = FastAPI(title="Strava Goal Visualizer API", lifespan=lifespan)
 app.add_middleware(
     SessionMiddleware,
     secret_key=settings.session_secret_key,
-    https_only=False,
+    https_only=settings.session_cookie_secure,
     same_site="lax",
 )
 app.add_middleware(

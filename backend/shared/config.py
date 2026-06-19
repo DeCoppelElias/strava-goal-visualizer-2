@@ -41,6 +41,7 @@ class Settings:
     session_secret_key: str
     strava_webhook_verify_token: str
     sync_cooldown_seconds: int = 600
+    session_cookie_secure: bool = True
 
 
 settings = Settings(
@@ -53,4 +54,6 @@ settings = Settings(
     session_secret_key=os.environ["SESSION_SECRET_KEY"],
     strava_webhook_verify_token=os.environ["STRAVA_WEBHOOK_VERIFY_TOKEN"],
     sync_cooldown_seconds=int(os.environ.get("SYNC_COOLDOWN_SECONDS", "600")),
+    session_cookie_secure=os.environ.get("SESSION_COOKIE_SECURE", "true").lower()
+    not in ("false", "0"),
 )
