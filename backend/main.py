@@ -2,11 +2,14 @@ import asyncio
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from alembic import command as alembic_command
 from alembic.config import Config as AlembicConfig
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -109,3 +112,17 @@ async def health_db(request: Request) -> DbHealthResponse:
     except (SQLAlchemyError, OSError) as exc:
         logger.error("DB health check failed: %s", exc)
         return DbHealthResponse(db="error")
+
+
+# ---------------------------------------------------------------------------
+# SPA static file serving (production only — skipped when frontend/dist/ absent)
+# ---------------------------------------------------------------------------
+_DIST = Path(__file__).parent.parent / "frontend" / "dist"
+
+if _DIST.is_dir():
+    app.mount("/assets", StaticFiles(directory=_DIST / "assets"), name="static-assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    @limiter.limit("120/minute")
+    async def spa_fallback(request: Request, full_path: str) -> FileResponse:
+        return FileResponse(_DIST / "index.html")
