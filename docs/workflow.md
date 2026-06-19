@@ -37,6 +37,14 @@ If something clearly broken is discovered outside the task scope: flag it and as
 - Explain changes
 - Provide test steps
 - List edge cases
+- **Learning notes** — Call out the non-obvious technical additions from this task
+  (patterns, library choices, tricky implementation details) with a short explanation
+  of *why* it was done that way. The aim is that you learn from the change, not just
+  receive it. Skip the trivial/obvious; focus on what's genuinely worth knowing.
+- **Out-of-scope flags** — Flag any build errors, warnings, broken code, or other red
+  herrings noticed along the way, even if unrelated to the current task. Record them
+  here so they can be fixed later — never fix them silently and never leave them
+  unmentioned.
 
 ---
 

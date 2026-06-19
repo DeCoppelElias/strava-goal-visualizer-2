@@ -37,6 +37,10 @@ Every task follows this exact sequence (see `docs/workflow.md` for authoritative
 - Explain changes made
 - Provide test steps
 - List edge cases
+- **Learning notes:** summarize the non-obvious technical additions with a brief
+  explanation of *why*, so the reviewer keeps learning while working with Claude
+- **Out-of-scope flags:** surface any build errors or unrelated red herrings spotted
+  during the work so they can be addressed later — flag, don't fix silently
 
 ---
 
