@@ -239,6 +239,34 @@ Data-access tasks are verified with integration tests against a real PostgreSQL 
 
 ---
 
+### EPIC-9 — Security & Privacy Hardening
+
+**Purpose:** Close the findings from the pre-launch security/privacy audit (June 19, 2026). Scope is a small public personal project (~few hundred users); fixes are proportionate, not enterprise-grade.
+
+**Why it exists (system evolution order):** The app is otherwise launch-ready — auth, access control, token encryption, and GDPR posture are all sound. These tasks resolve the specific gaps the audit flagged, ordered by severity. TASK-9.1 (HIGH) should land before public launch.
+
+**Included:**
+- `Secure` flag on the session cookie + privacy-policy accuracy (HIGH)
+- Reducing forged-deletion risk on the unauthenticated Strava deauth webhook via a `subscription_id` filter + documented residual risk (LOW)
+- Correct client-IP resolution behind the Fly.io proxy for rate limiting + logs (LOW)
+- Squaring the deletion audit log with the "permanent erasure" privacy-policy claim (LOW)
+
+**Excluded:**
+- Verifying deauth events by calling Strava with the stored token before deleting (rejected — inverts the safe default; a transient Strava failure during a genuine deauth would skip a required erasure)
+- Disabling `/docs` in production (INFO — endpoints are auth-gated; no action)
+- Binding OAuth `state` to the browser session (INFO — random single-use token already provides CSRF protection)
+
+**Open-source readiness check (June 2026):** This repo + its docs are intended to be published publicly under a license, so the audit also reviewed what publication exposes. Reusable checklist for future projects, with this project's outcome:
+
+- **Secrets in tree _and_ in git history** — `git log --diff-filter=A -- '*.env' .env` must be empty; scan tracked files for key-shaped strings. _Result:_ clean — `.env` never committed, only a blank `.env.example` ships; matches were npm SRI hashes (public) and a fake test value. ✓
+- **Infra details in docs/scripts** — ops docs must use placeholders, not real hostnames/app names/credentials. _Result:_ `docs/ops/db-statistics.md` + `scripts/stats.sql` use `<db-app>`/`<db-name>`/`<password>` and illustrative numbers. ✓
+- **Security-by-design, not by-obscurity** — confirm real protections key off `.env` secrets so source disclosure doesn't weaken them. _Result:_ signed sessions, Fernet token encryption, and OAuth state all depend on env secrets; the only obscurity-dependent mechanism (`subscription_id`, TASK-9.2) is documented as a speed bump, not a boundary. ✓
+- **Personal data in tree** — names/emails baked into source. _Result:_ operator's real name in `LICENSE` + `config/site.ts` is *required* (copyright + GDPR controller disclosure); personal email appears in no tracked file; public-facing contact is the dedicated `goalvisualizer.support@gmail.com`. ✓
+- **Personal data in commit metadata** — author name/email is exposed verbatim on publish and only scrubbable via history rewrite (`git filter-repo --mailmap`), much cheaper before the first public push. _Result:_ commit-author email is the operator's existing public GitHub identity → acceptable, no rewrite needed. A leftover `Ike@<hostname>` author on 4 commits is an auto-generated machine identity (not a routable address) → harmless; optional tidy only.
+- **Public backlog advertises unfixed weaknesses** — an open security backlog is fine to publish, but land the highest-severity, currently-exploitable item first so the public repo isn't a pointer to a live gap. _Result:_ ship **TASK-9.1 (Secure cookie)** before/at publication; the remaining LOW items are fine to be public.
+
+---
+
 ---
 
 ## TASK BREAKDOWN
@@ -1623,6 +1651,10 @@ Potentially think about whether syncing should immediatly remove all current mem
 
 ---
 
+### EPIC-8 — Operations & Observability
+
+---
+
 #### TASK-8.1 ✅ _(ad-hoc)_
 
 **Name:** Achievement Badges
@@ -1703,4 +1735,109 @@ Also consider meta tools, how can I as an admin know how many clubs/people are c
 
 Also consider changing the email to a dedicated support email
 
-Do a final security sweep
+---
+
+### EPIC-9 — Security & Privacy Hardening
+
+---
+
+#### TASK-9.1
+
+**Name:** Mark session cookie `Secure` in production
+
+**Goal:** The session cookie carries the `Secure` attribute in production so it is never sent over plaintext HTTP, matching the claim already made in the privacy policy.
+
+**Context:** `backend/main.py` configures `SessionMiddleware(https_only=False)`, so the auth cookie lacks `Secure`. The published privacy policy states "Session cookies are HttpOnly, Secure, and SameSite=Lax" — so the code currently contradicts a stated safeguard. The cookie *is* the authentication credential; without `Secure`, a browser attaches it to any `http://` request to the domain. Local dev runs over HTTP and still needs `https_only=False`, so the value must be configurable. Audit severity: HIGH.
+
+**Input:** `backend/main.py`, `backend/shared/config.py`, `.env.example`
+
+**Output:**
+- `backend/shared/config.py` — add `session_cookie_secure: bool` to `Settings`, defaulting to `True`; read from optional env var `SESSION_COOKIE_SECURE` (parse `"false"`/`"0"` as `False`)
+- `backend/main.py` — `SessionMiddleware(..., https_only=settings.session_cookie_secure)`
+- `.env.example` — document `SESSION_COOKIE_SECURE` with a comment that it must be `false` only for local HTTP development and `true` (the default) in production
+
+**Dependencies:** TASK-2.5
+
+**Complexity:** Small
+
+**Testability:** With `SESSION_COOKIE_SECURE` unset (default), the `Set-Cookie` header on the OAuth callback redirect includes `Secure`. With `SESSION_COOKIE_SECURE=false`, it does not. Existing auth tests still pass.
+
+---
+
+#### TASK-9.2
+
+**Name:** Reduce forged-deletion risk on the deauth webhook (`subscription_id` filter + documented residual risk)
+
+**Goal:** Reject naive forged `POST /strava/deauth` requests with a cheap `subscription_id` check, and document the residual risk that cannot be fully eliminated.
+
+**Context:** `backend/privacy/router.py` deletes all of a user's data based solely on the `owner_id` in an unauthenticated request body. Strava does **not** sign webhook events — there is no HMAC or per-event secret, only the one-time `hub.challenge` / `verify_token` handshake at subscription time (confirmed against Strava's docs + developer community). A user's `strava_athlete_id` is not secret (it is returned in the club dashboard via `MemberProgressResponse.strava_athlete_id` and visible on Strava), so a fellow club member could POST `{"object_type":"athlete","updates":{"authorized":"false"},"owner_id":<victim>}` to wipe that user's activities, goal, memberships, and tokens. The data is re-syncable from Strava (no theft, fully recoverable on next login), and the realistic attacker is narrow (someone who knows the victim uses this app and their athlete ID), so this is **LOW**, downgraded from the audit's MEDIUM.
+
+The chosen mitigation is a `subscription_id` filter: every genuine Strava event carries the `subscription_id` of our one push subscription (returned as `{"id": ...}` at registration). We reject events whose `subscription_id` doesn't match ours. This is a free speed bump with no external call and no risk to the genuine-deauth path — **not** a real authentication boundary, since `subscription_id` is a guessable incrementing integer. A determined attacker who guesses it is the documented residual risk. (The rejected alternative — verifying the deauth by calling Strava with the stored token before deleting — was dropped because it inverts the safe default: a transient Strava failure during a *genuine* deauth would skip a required erasure, a worse GDPR/platform-compliance outcome than deleting on a forged event.)
+
+The configured subscription ID is **optional**: the value only exists after the webhook is registered in production, so when `STRAVA_WEBHOOK_SUBSCRIPTION_ID` is unset the filter is skipped entirely and the endpoint behaves exactly as it does today (no chicken-and-egg at first boot, no behaviour change for local/dev). The filter activates only once the operator sets the value post-registration.
+
+**Input:** `backend/privacy/schemas.py`, `backend/privacy/router.py`, `backend/shared/config.py`, `.env.example`, `docs/ops/webhook-registration.md`, `docs/design.md`, `tests/backend/privacy/test_deauth_integration.py`, `tests/backend/privacy/test_privacy_router.py`
+
+**Output:**
+- `backend/privacy/schemas.py` — add `subscription_id: int | None = None` to `StravaWebhookPayload` (optional, tolerant of payload-shape variation)
+- `backend/shared/config.py` — add `strava_webhook_subscription_id: int | None` to `Settings`, read from optional env `STRAVA_WEBHOOK_SUBSCRIPTION_ID` (parse to `int` when present, `None` when unset); **do not** add it to `_REQUIRED_ENV_VARS`
+- `backend/privacy/router.py` — in `strava_deauth_webhook`, before any lookup/deletion: only apply the filter when `settings.strava_webhook_subscription_id is not None`; if set and `payload.subscription_id != settings.strava_webhook_subscription_id`, log a `warning` and return `DeauthResponse()` (still `200`, per Strava's webhook contract). When the setting is unset, skip the check entirely. Keep all existing info/error logging and the existing `object_type`/`authorized` guards.
+- `.env.example` — add commented-out `# STRAVA_WEBHOOK_SUBSCRIPTION_ID=` with a note that it is the `id` Strava returns when the webhook subscription is registered (see ops doc), is only known after registration, and that leaving it unset disables the filter
+- `docs/ops/webhook-registration.md` — after Step 1, add an explicit instruction to copy the returned subscription `id` into `STRAVA_WEBHOOK_SUBSCRIPTION_ID` in the production environment, and note that the deauth endpoint will ignore (200) any event whose `subscription_id` doesn't match; cross-reference Step 2's GET as the way to recover the ID if lost
+- `docs/design.md` — short note under the privacy/deauth section recording the residual risk and why the token-verification alternative was rejected
+
+**Dependencies:** TASK-7.5
+
+**Complexity:** Small
+
+**Testability:** Integration tests (mocked, `tests/backend/privacy/`):
+- Filter active (`STRAVA_WEBHOOK_SUBSCRIPTION_ID` set), genuine deauth — matching `subscription_id`, `authorized:false`, known athlete → user rows deleted, `deletion_events` has a `strava_deauth` row, returns `200`.
+- Filter active, forged deauth — **mismatched** `subscription_id`, known athlete → no rows deleted, warning logged, returns `200`.
+- Filter active, payload missing `subscription_id` (`None`) → treated as mismatch: no deletion, warning logged, `200`.
+- Filter unset (no `STRAVA_WEBHOOK_SUBSCRIPTION_ID`) — genuine deauth deletes regardless of the payload's `subscription_id` (back-compat with today's behaviour).
+- Matching `subscription_id` but `object_type != "athlete"` or `authorized != "false"` → no-op `200` (existing guards still hold).
+- Unknown athlete with matching `subscription_id` → warning logged, `200`, no change.
+- Existing deauth tests continue to pass with the filter unset; add `subscription_id` to payloads only in the filter-active cases.
+
+---
+
+#### TASK-9.3
+
+**Name:** Trust Fly.io proxy headers for client IP
+
+**Goal:** Rate limiting and request logs key off the real client IP rather than the Fly.io proxy's IP.
+
+**Context:** The limiter uses `get_remote_address` (`request.client.host`), but `backend/Dockerfile` starts uvicorn without `--proxy-headers`. Behind Fly's proxy every request appears to come from one IP, so per-IP limits collapse into a shared global bucket (e.g. `2/minute` on `/sync` shared across all users, locking out legitimate users) and logged IPs are wrong. Audit severity: LOW (primarily a correctness issue, not a vulnerability).
+
+**Input:** `backend/Dockerfile`
+
+**Output:**
+- `backend/Dockerfile` — add `--proxy-headers` and `--forwarded-allow-ips="*"` to the uvicorn `CMD` (trusting the Fly proxy to set `X-Forwarded-For`).
+
+**Dependencies:** None
+
+**Complexity:** Small
+
+**Testability:** With `X-Forwarded-For` set on a request, `request.client.host` (and thus the rate-limit key / logged IP) reflects the forwarded client address rather than the immediate peer. Two different forwarded IPs get independent rate-limit buckets.
+
+---
+
+#### TASK-9.4
+
+**Name:** Reconcile deletion audit log with the "permanent erasure" claim
+
+**Goal:** The retained deletion record no longer contradicts the privacy policy's "all your data is permanently erased" statement.
+
+**Context:** `delete_user_data` writes a `DeletionEvent` row containing the user's `strava_athlete_id`, which persists after erasure. Keeping a minimal deletion record is a legitimate interest (proving a deletion was honored), but the athlete ID is a pseudonymous identifier and the wording "all your data" is then inaccurate. Audit severity: LOW. Pick one of the two fixes below.
+
+**Input:** `frontend/src/pages/PrivacyPolicyPage.tsx` and/or `backend/privacy/privacy_service.py`, `backend/shared/models.py`
+
+**Output (choose one):**
+- **Option A (policy wording):** `PrivacyPolicyPage.tsx` — note that a minimal, non-content deletion record (a hashed identifier + timestamp + reason) is retained solely to evidence that the deletion occurred.
+- **Option B (pseudonymize):** if the athlete ID is only needed for counts/dedup, store a salted hash instead of the raw `strava_athlete_id` in `DeletionEvent`, and keep the policy wording as-is. Requires a model/migration change.
+
+**Dependencies:** TASK-7.4, TASK-7.7
+
+**Complexity:** Small
+
+**Testability:** Option A — privacy policy text accurately describes the retained deletion record. Option B — after deletion, `deletion_events` contains no raw `strava_athlete_id`; the stored value is a non-reversible hash, and deletion/audit counts still work.
