@@ -105,12 +105,12 @@ export default function PaceChart({ dailySeries, goalKm, showHighlight = true }:
       <g>
         <circle cx={cx} cy={cy} r={4} fill={accent} />
         <text
-          x={cx}
-          y={cy - 10}
-          textAnchor="middle"
+          x={cx + 8}
+          y={cy + 4}
+          textAnchor="start"
           fontSize={11}
           fontFamily="JetBrains Mono, monospace"
-          fill={text1}
+          fill={accent}
         >
           {payload.actual!.toFixed(1)} km
         </text>
