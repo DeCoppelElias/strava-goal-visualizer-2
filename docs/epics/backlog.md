@@ -267,6 +267,23 @@ Data-access tasks are verified with integration tests against a real PostgreSQL 
 
 ---
 
+### EPIC-10 — Production Deployment Guide
+
+**Purpose:** Document the end-to-end steps to deploy the app to production so that any future operator (or the author after time away) can go from zero to a live, correctly-configured instance without guessing.
+
+**Why it exists (system evolution order):** The README covers local dev well. Production deployment introduces different concerns — production env var values, running migrations against a live database, registering the Strava webhook, and post-deploy verification. These steps are undocumented and scattered across `.env.example` and `docs/ops/webhook-registration.md`.
+
+**Included:**
+- `docs/ops/deployment.md` — authoritative production deployment guide covering env vars, migrations, and post-deploy steps
+- README updated with a brief "Deploying to production" pointer to `docs/ops/deployment.md`
+- Cross-references to `docs/ops/webhook-registration.md` for the webhook registration step
+
+**Excluded:**
+- Infrastructure provisioning (Fly.io account setup, database creation) — operator responsibility
+- CI/CD pipeline automation
+
+---
+
 ---
 
 ## TASK BREAKDOWN
@@ -1841,3 +1858,29 @@ The configured subscription ID is **optional**: the value only exists after the 
 **Complexity:** Small
 
 **Testability:** Option A — privacy policy text accurately describes the retained deletion record. Option B — after deletion, `deletion_events` contains no raw `strava_athlete_id`; the stored value is a non-reversible hash, and deletion/audit counts still work.
+
+---
+
+### EPIC-10 — Production Deployment Guide
+
+---
+
+#### TASK-10.1
+
+**Name:** Write production deployment guide
+
+**Goal:** A new operator can deploy the app to production and reach a correctly-configured, live instance by following `docs/ops/deployment.md` alone.
+
+**Context:** Local dev is documented in the README and Docker Compose section. Production deployment has different requirements — production-appropriate env var values (URLs are not localhost, `SESSION_COOKIE_SECURE=true`), running Alembic migrations against the live DB, and the post-deploy Strava webhook registration step (including copying the returned `STRAVA_WEBHOOK_SUBSCRIPTION_ID`). These are currently undocumented or scattered. The decisions about structure (separate file vs README section, level of detail) are deferred to implementation.
+
+**Input:** `README.md`, `.env.example`, `docs/ops/webhook-registration.md`
+
+**Output:**
+- `docs/ops/deployment.md` — end-to-end production deployment guide covering: production env var reference (with correct non-localhost defaults), running migrations, post-deploy verification, and cross-reference to `docs/ops/webhook-registration.md` for the webhook registration step
+- `README.md` — brief "Deploying to production" pointer to `docs/ops/deployment.md`
+
+**Dependencies:** TASK-9.1, TASK-9.2 (so `SESSION_COOKIE_SECURE` and `STRAVA_WEBHOOK_SUBSCRIPTION_ID` are already documented in `.env.example` before this guide is written)
+
+**Complexity:** Small
+
+**Testability:** A reader unfamiliar with the project can follow the guide from a fresh environment and reach a live, correctly-configured instance without consulting any other source.
